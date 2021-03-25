@@ -1,8 +1,8 @@
 package coulomb.infra
 
-import scala.compiletime.ops.int._
-import scala.compiletime.ops.boolean._
-import scala.compiletime.ops.any._
+import scala.compiletime.ops.int.*
+import scala.compiletime.ops.boolean.*
+import scala.compiletime.ops.any.*
 
 trait SNil
 trait %:[H, T]

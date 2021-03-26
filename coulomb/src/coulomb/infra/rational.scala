@@ -8,7 +8,8 @@ object rational:
 
     class Rational private (val n: BigInt, val d: BigInt) extends Serializable:
 
-        override def toString: String = s"$n/$d"
+        override def toString: String =
+            if (d == 1) s"$n" else s"$n/$d"
 
         @targetName("add")
         def +(rhs: Rational): Rational =
@@ -30,24 +31,34 @@ object rational:
         def unary_- : Rational =
             Rational.apply(-n, d)
 
-/*
         def pow(e: Rational): Rational =
-            if (e.n == 0) then
+            if (n < 0) then
+                require(e.d == 1) // negative can only be raised to integer power
+                val p = (-this).pow(e)
+                if (e.n % 2 == 0) then p else -p
+            else if (e.n < 0) then
+                Rational.apply(d, n).pow(-e)
+            else if (e.n == 0) then
+                require(n > 0) // 0.pow(0) is undefined
                 Rational.apply(1, 1)
-            else if ((e.n == 1) && (e.d == 1)) then
-                Rational.apply(this)
+            else if (e.n == 1) then
+                if (e.d == 1) then this else
+                    // this >= 0, e is of form 1/k
+                    (Rational.integerRoot(n, e.d), Rational.integerRoot(d, e.d)) match
+                        case (Some(nr), Some(dr)) => Rational.apply(nr, dr)
+                        case _ => Rational(scala.math.pow(this.toDouble, 1.0 / e.d.toDouble))
             else
-                Rational.apply(1, 1)
-*/
+                if (e.d == 1) then
+                    Rational.apply(n.pow(e.n.toInt), d.pow(e.n.toInt))
+                else
+                    val p = Rational.apply(e.n, 1)
+                    val r = Rational.apply(1, e.d)
+                    this.pow(p).pow(r)
 
     end Rational
 
     object Rational:
         import scala.math.*
-
-        def integerRoot(v: BigInt, k: BigInt): Boolean =
-            val t = scala.math.pow(v.toDouble, k.toDouble)
-            t == scala.math.rint(t)
 
         def apply(n: BigInt, d: BigInt): Rational =
             require(d != 0)
@@ -64,6 +75,7 @@ object rational:
         inline def apply(v: Int): Rational = apply(v, 1)
         inline def apply(v: Long): Rational = apply(v, 1)
         inline def apply(v: Float): Rational = apply(v.toDouble)
+
         def apply(v: Double): Rational =
             if (abs(v) == 0.0) then
                 new Rational(0, 1)
@@ -73,7 +85,16 @@ object rational:
                 val vi = v * pow(10, e)
                 val n = BigInt(vi.toLong) * BigInt(10).pow(np10)
                 val d = BigInt(10).pow(dp10)
-                new Rational(n, d)
+                apply(n, d)
+
+        def integerRoot(v: BigInt, k: BigInt): Option[BigInt] =
+            require(v >= 0 && k > 0)
+            if k == 1 then Some(v)
+            else
+                val t = if k == 2 then sqrt(v.toDouble)
+                else if k == 3 then cbrt(v.toDouble)
+                else pow(v.toDouble, 1.0 / k.toDouble)
+                if (t == rint(t)) then Some(BigInt(t.toLong)) else None
     end Rational
 
     extension(r: Rational)

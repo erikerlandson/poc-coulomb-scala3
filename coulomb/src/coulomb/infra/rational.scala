@@ -127,24 +127,24 @@ object rational:
 
         def plusImpl[L, R](using lt: Type[L], rt: Type[R], q: Quotes): Expr[/%+[L, R]] = {
             import quotes.reflect.*
-            (TypeRepr.of[L], TypeRepr.of[R]) match
-                case (IntLiteralType(vL), IntLiteralType(vR)) =>
-                    // this is an idiom from:
-                    // https://github.com/lampepfl/dotty/blob/master/tests/pos-macros/tasty-constant-type/Macro_1.scala
-                    Literal(IntConstant(vL + vR)).tpe.asType match
-                        case '[res] => '{ new _root_.coulomb.infra.rational./%+[L, R] { type Res = res } }
-                case (RationalType(ln, ld), RationalType(rn, rd)) =>
-                    val sum = Rational(ln, ld) + Rational(rn, rd)
-                    val tres = if (sum.d == 1) then
-                        ConstantType(IntConstant(sum.n.toInt))
-                    else
-                        (TypeRepr.of[L]).appliedTo(List(ConstantType(IntConstant(sum.n.toInt)), ConstantType(IntConstant(sum.d.toInt))))
-                    tres.asType match
-                        case '[res] => '{ new _root_.coulomb.infra.rational./%+[L, R] { type Res = res } }
-                case _ =>
-                    report.error("Unsupported types for /%+")
-                    '{???}
+            val res = (TypeRepr.of[L], TypeRepr.of[R]) match
+                case (IntLiteralType(lv), IntLiteralType(rv)) => Rational(lv + rv, 1)
+                case (RationalType(ln, ld), RationalType(rn, rd)) => Rational(ln, ld) + Rational(rn, rd)
+                case (IntLiteralType(lv), RationalType(rn, rd)) => Rational(lv, 1) + Rational(rn, rd)
+                case (RationalType(ln, ld), IntLiteralType(rv)) => Rational(ln, ld) + Rational(rv, 1)
+                case _ => { report.error("Unsupported types for /%+"); Rational(0, 1) }
+            resType(res) match
+                case '[resT] => '{ new _root_.coulomb.infra.rational./%+[L, R] { type Res = resT } }
         }
+
+        def resType(res: Rational)(using Quotes): Type[?] =
+            import quotes.reflect.*
+            val tres = if (res.d == 1) then
+                ConstantType(IntConstant(res.n.toInt))
+            else
+                val resTC = TypeRepr.of[_root_.coulomb.infra.rational./%]
+                resTC.appliedTo(List(ConstantType(IntConstant(res.n.toInt)), ConstantType(IntConstant(res.d.toInt))))
+            tres.asType
 
         object IntLiteralType:
             def unapply(tr: Any)(using Quotes): Option[Int] =

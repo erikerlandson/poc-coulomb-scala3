@@ -4,9 +4,6 @@ import scala.quoted.*
 import scala.annotation.{ targetName, implicitNotFound }
 
 object rational:
-    // rational exponents at the type level
-    trait /%[L, R]
-
     class Rational private (val n: BigInt, val d: BigInt) extends Serializable:
         import Rational.canonical
 
@@ -114,40 +111,62 @@ object rational:
         inline def toFloat: Float = r.toDouble.toFloat
         inline def toDouble: Double = r.n.toDouble / r.d.toDouble
 
-    @implicitNotFound("Plus[${L}, ${R}] has no defined context")
-    trait Plus[L, R] {
+    // rational exponents at the type level
+    trait /%[L, R]
+
+    @implicitNotFound("${L} /%+ ${R} has no defined context")
+    trait /%+[L, R]:
         type Res
-    }
+
+    object /%+ :
+        import scala.quoted.*
+        transparent inline given [L, R]: /%+[L, R] = ${ macros.plusImpl[L, R] }
 
     object macros:
         import scala.quoted.*
 
-        transparent inline given givenPlus[L, R]: Plus[L, R] = ${
-            plusImpl[L, R]
-        }
-
-        def plusImpl[L, R](using lt: Type[L], rt: Type[R], q: Quotes): Expr[Plus[L, R]] = {
+        def plusImpl[L, R](using lt: Type[L], rt: Type[R], q: Quotes): Expr[/%+[L, R]] = {
             import quotes.reflect.*
-            (intLiteralTypeVal[L], intLiteralTypeVal[R]) match
-                case (Some(vL), Some(vR)) =>
-                    // this is a very weird idiom from:
+            (TypeRepr.of[L], TypeRepr.of[R]) match
+                case (IntLiteralType(vL), IntLiteralType(vR)) =>
+                    // this is an idiom from:
                     // https://github.com/lampepfl/dotty/blob/master/tests/pos-macros/tasty-constant-type/Macro_1.scala
                     Literal(IntConstant(vL + vR)).tpe.asType match
-                        case '[res] => '{ new coulomb.infra.rational.Plus[L, R] { type Res = res } }
+                        case '[res] => '{ new _root_.coulomb.infra.rational./%+[L, R] { type Res = res } }
+                case (RationalType(ln, ld), RationalType(rn, rd)) =>
+                    val sum = Rational(ln, ld) + Rational(rn, rd)
+                    val tres = if (sum.d == 1) then
+                        ConstantType(IntConstant(sum.n.toInt))
+                    else
+                        (TypeRepr.of[L]).appliedTo(List(ConstantType(IntConstant(sum.n.toInt)), ConstantType(IntConstant(sum.d.toInt))))
+                    tres.asType match
+                        case '[res] => '{ new _root_.coulomb.infra.rational./%+[L, R] { type Res = res } }
                 case _ =>
-                    report.error("Unsupported types for Plus")
+                    report.error("Unsupported types for /%+")
                     '{???}
         }
 
-        // all this goo is defined here:
-        // https://github.com/lampepfl/dotty/blob/master/library/src/scala/quoted/Quotes.scala
-        def intLiteralTypeVal[T :Type](using Quotes): Option[Int] =
-            import quotes.reflect.*
-            TypeRepr.of[T] match
-                case ConstantType(cT) => cT match
-                    case IntConstant(iT) => Some(iT)
-                    case _ => None
-                case _ => None
+        object IntLiteralType:
+            def unapply(tr: Any)(using Quotes): Option[Int] =
+                 import quotes.reflect.*
+                 try
+                     // I haven't figured out a way to specify TypeRepr for parameter 'tr'.
+                     // Wrapping this in try/catch adequately fakes type soundness here, since if it fails,
+                     // the correct answer is None anyway
+                     tr.asInstanceOf[TypeRepr] match
+                        case ConstantType(IntConstant(i)) => Some(i)
+                        case _ => None
+                 catch _ => None
+
+        object RationalType:
+            def unapply(tr: Any)(using Quotes): Option[(Int, Int)] =
+                 import quotes.reflect.*
+                 try
+                     tr.asInstanceOf[TypeRepr] match
+                        case AppliedType(tc, List(ConstantType(IntConstant(n)), ConstantType(IntConstant(d)))) if (tc.typeSymbol.name == "/%") =>
+                            Some((n, d))
+                        case _ => None
+                 catch _ => None
 
     end macros
 

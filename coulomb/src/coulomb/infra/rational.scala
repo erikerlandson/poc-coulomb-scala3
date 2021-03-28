@@ -117,29 +117,55 @@ object rational:
     @implicitNotFound("${L} /%+ ${R} has no defined context")
     trait /%+[L, R]:
         type Res
-
     object /%+ :
-        import scala.quoted.*
-        transparent inline given [L, R]: /%+[L, R] = ${ macros.plusImpl[L, R] }
+        transparent inline given [L, R]: /%+[L, R] = ${ macros.addImpl[L, R] }
+
+    trait /%-[L, R]:
+        type Res
+    object /%- :
+        transparent inline given [L, R]: /%-[L, R] = ${ macros.subImpl[L, R] }
+
+    trait /%*[L, R]:
+        type Res
+    object /%* :
+        transparent inline given [L, R]: /%*[L, R] = ${ macros.mulImpl[L, R] }
+
+    trait /%/[L, R]:
+        type Res
+    object /%/ :
+        transparent inline given [L, R]: /%/[L, R] = ${ macros.divImpl[L, R] }
 
     object macros:
         import scala.quoted.*
 
-        def plusImpl[L, R](using lt: Type[L], rt: Type[R], q: Quotes): Expr[/%+[L, R]] = {
-            import quotes.reflect.*
-            val res = (TypeRepr.of[L], TypeRepr.of[R]) match
-                case (IntLiteralType(lv), IntLiteralType(rv)) => Rational(lv + rv, 1)
-                case (RationalType(ln, ld), RationalType(rn, rd)) => Rational(ln, ld) + Rational(rn, rd)
-                case (IntLiteralType(lv), RationalType(rn, rd)) => Rational(lv, 1) + Rational(rn, rd)
-                case (RationalType(ln, ld), IntLiteralType(rv)) => Rational(ln, ld) + Rational(rv, 1)
-                case _ => { report.error("Unsupported types for /%+"); Rational(0, 1) }
-            resType(res) match
+        def addImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%+[L, R]] =
+            resType(resVal[L, R](_ + _)) match
                 case '[resT] => '{ new _root_.coulomb.infra.rational./%+[L, R] { type Res = resT } }
-        }
+
+        def subImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%-[L, R]] =
+            resType(resVal[L, R](_ - _)) match
+                case '[resT] => '{ new _root_.coulomb.infra.rational./%-[L, R] { type Res = resT } }
+
+        def mulImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%*[L, R]] =
+            resType(resVal[L, R](_ * _)) match
+                case '[resT] => '{ new _root_.coulomb.infra.rational./%*[L, R] { type Res = resT } }
+
+        def divImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%/[L, R]] =
+            resType(resVal[L, R](_ / _)) match
+                case '[resT] => '{ new _root_.coulomb.infra.rational./%/[L, R] { type Res = resT } }
+
+        def resVal[L, R](op: (Rational, Rational) => Rational)(using Type[L], Type[R], Quotes): Rational =
+            import quotes.reflect.*
+            (TypeRepr.of[L], TypeRepr.of[R]) match
+                case (IntLiteralType(lv), IntLiteralType(rv)) => op(Rational(lv, 1), Rational(rv, 1))
+                case (RationalType(ln, ld), RationalType(rn, rd)) => op(Rational(ln, ld), Rational(rn, rd))
+                case (IntLiteralType(lv), RationalType(rn, rd)) => op(Rational(lv, 1), Rational(rn, rd))
+                case (RationalType(ln, ld), IntLiteralType(rv)) => op(Rational(ln, ld), Rational(rv, 1))
+                case _ => { report.error("Unsupported types for Rational function"); Rational(0, 1) }
 
         def resType(res: Rational)(using Quotes): Type[?] =
             import quotes.reflect.*
-            val tres = if (res.d == 1) then
+            val tres: TypeRepr = if (res.d == 1) then
                 ConstantType(IntConstant(res.n.toInt))
             else
                 val resTC = TypeRepr.of[_root_.coulomb.infra.rational./%]

@@ -10,25 +10,18 @@ object rational:
         override def toString: String =
             if (d == 1) s"$n" else s"$n/$d"
 
-        // `targetName` may not be much use here,
-        // I don't think coulomb is going to be usable outside of scala
-        @targetName("add")
         def +(rhs: Rational): Rational =
             canonical((n * rhs.d) + (rhs.n * d), d * rhs.d)
 
-        @targetName("sub")
         def -(rhs: Rational): Rational =
             canonical((n * rhs.d) - (rhs.n * d), d * rhs.d)
 
-        @targetName("mul")
         def *(rhs: Rational): Rational =
             canonical(n * rhs.n, d * rhs.d)
 
-        @targetName("div")
         def /(rhs: Rational): Rational =
             canonical(n * rhs.d, d * rhs.n)
 
-        @targetName("neg")
         def unary_- : Rational =
             canonical(-n, d)
 

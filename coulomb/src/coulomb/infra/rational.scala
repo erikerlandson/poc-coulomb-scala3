@@ -10,19 +10,19 @@ object rational:
         override def toString: String =
             if (d == 1) s"$n" else s"$n/$d"
 
-        def +(rhs: Rational): Rational =
+        inline def +(rhs: Rational): Rational =
             canonical((n * rhs.d) + (rhs.n * d), d * rhs.d)
 
-        def -(rhs: Rational): Rational =
+        inline def -(rhs: Rational): Rational =
             canonical((n * rhs.d) - (rhs.n * d), d * rhs.d)
 
-        def *(rhs: Rational): Rational =
+        inline def *(rhs: Rational): Rational =
             canonical(n * rhs.n, d * rhs.d)
 
-        def /(rhs: Rational): Rational =
+        inline def /(rhs: Rational): Rational =
             canonical(n * rhs.d, d * rhs.n)
 
-        def unary_- : Rational =
+        inline def unary_- : Rational =
             canonical(-n, d)
 
         def pow(e: Rational): Rational =

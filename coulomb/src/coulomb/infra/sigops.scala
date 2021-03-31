@@ -1,9 +1,9 @@
 package repro
 
-trait SNil
-trait %:[H, T]
-trait Zero
-trait Fail
+class SNil
+class %:[H, T]
+class Zero
+class Fail
 
 type FilterZ[S] = S match
     case SNil => SNil

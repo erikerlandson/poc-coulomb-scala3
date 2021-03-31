@@ -21,30 +21,34 @@ class Rational private (val n: BigInt, val d: BigInt) extends Serializable:
     inline def unary_- : Rational =
         canonical(-n, d)
 
-    def pow(e: Rational): Rational =
-        if (n < 0) then
-            require(e.d == 1) // negative can only be raised to integer power
-            val p = (-this).pow(e)
-            if (e.n % 2 == 0) then p else -p
-        else if (e.n < 0) then
-            canonical(d, n).pow(-e)
-        else if (e.n == 0) then
-            require(n > 0) // 0.pow(0) is undefined
+    def pow(e: Int): Rational =
+        if (e < 0) then
+            canonical(d.pow(-e), n.pow(-e))
+        else if (e == 0) then
+            require(n != 0)
             canonical(1, 1)
-        else if (e.n == 1) then
-            if (e.d == 1) then this else
-                // this >= 0, e is of form 1/k
-                (Rational.integerRoot(n, e.d), Rational.integerRoot(d, e.d)) match
-                    case (Some(nr), Some(dr)) => canonical(nr, dr)
-                    case _ => Rational(scala.math.pow(this.toDouble, 1.0 / e.d.toDouble))
+        else if (e == 1) then
+            this
         else
-            if (e.d == 1) then
-                canonical(n.pow(e.n.toInt), d.pow(e.n.toInt))
-            else
-                val p = canonical(e.n, 1)
-                val r = canonical(1, e.d)
-                this.pow(p).pow(r)
+            canonical(n.pow(e), d.pow(e))
 
+    def root(e: Int): Rational =
+        import scala.math
+        require(e != 0)
+        if (e < 0) then
+            canonical(d, n).root(-e)
+        else if (e == 1) then
+            this
+        else if (n < 0) then
+            require(e % 2 == 1)
+            -((-this).root(e))
+        else
+            val nr = math.pow(n.toDouble, 1.0 / e.toDouble)
+            val dr = math.pow(d.toDouble, 1.0 / e.toDouble)
+            if ((nr == math.rint(nr)) && (dr == math.rint(dr))) then
+                canonical(nr.toLong, dr.toLong)
+            else
+                Rational(nr / dr)
 end Rational
 
 object Rational:
@@ -64,14 +68,14 @@ object Rational:
             // IEEE double precision guaranteed 15 base-10 digits of precision
             val e = 15 - (floor(log10(abs(v))).toInt + 1)
             val (np10, dp10) = if (e < 0) then (-e, 0) else (0, e)
-            val vi = v * pow(10, e)
+            val vi = v * scala.math.pow(10, e)
             val n = BigInt(vi.toLong) * BigInt(10).pow(np10)
             val d = BigInt(10).pow(dp10)
             canonical(n, d)
 
     // intended to be the single safe way to construct a canonical rational
     // every construction of a new Rational should reduce to some call to this method
-    def canonical(n: BigInt, d: BigInt): Rational =
+    private [rational] def canonical(n: BigInt, d: BigInt): Rational =
         require(d != 0, "Rational denominator cannot be zero")
         if (n == 0)
             // canonical zero is 0/1
@@ -83,15 +87,6 @@ object Rational:
             // canonical rationals are fully reduced
             val g = n.gcd(d)
             new Rational(n / g, d / g)
-
-    private [rational] def integerRoot(v: BigInt, k: BigInt): Option[BigInt] =
-        require(v >= 0 && k > 0)
-        if k == 1 then Some(v)
-        else
-            val t = if k == 2 then sqrt(v.toDouble)
-            else if k == 3 then cbrt(v.toDouble)
-            else pow(v.toDouble, 1.0 / k.toDouble)
-            if (t == rint(t)) then Some(BigInt(t.toLong)) else None
 end Rational
 
 extension(r: Rational)
@@ -99,3 +94,4 @@ extension(r: Rational)
     inline def toLong: Long = r.toDouble.toLong
     inline def toFloat: Float = r.toDouble.toFloat
     inline def toDouble: Double = r.n.toDouble / r.d.toDouble
+    inline def pow(e: Rational) = r.pow(e.n.toInt).root(e.d.toInt)

@@ -5,22 +5,25 @@ import scala.annotation.implicitNotFound
 // rational exponents at the type level
 trait /%[L, R]
 
-@implicitNotFound("${L} /%+ ${R} has no defined context")
+@implicitNotFound("Typelevel rational addition undefined for: ${L} /%+ ${R}")
 trait /%+[L, R]:
     type Res
 object /%+ :
     transparent inline given [L, R]: /%+[L, R] = ${ macros.addImpl[L, R] }
 
+@implicitNotFound("Typelevel rational subtraction undefined for: ${L} /%- ${R}")
 trait /%-[L, R]:
     type Res
 object /%- :
     transparent inline given [L, R]: /%-[L, R] = ${ macros.subImpl[L, R] }
 
+@implicitNotFound("Typelevel rational multiplication undefined for: ${L} /%* ${R}")
 trait /%*[L, R]:
     type Res
 object /%* :
     transparent inline given [L, R]: /%*[L, R] = ${ macros.mulImpl[L, R] }
 
+@implicitNotFound("Typelevel rational division undefined for: ${L} /%/ ${R}")
 trait /%/[L, R]:
     type Res
 object /%/ :

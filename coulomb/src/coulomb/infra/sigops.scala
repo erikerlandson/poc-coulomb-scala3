@@ -12,11 +12,46 @@ import coulomb.rational.{ /%, /%+, /%-, /%* }
 trait SNil
 trait %:[Head, Tail]
 
-@implicitNotFound("Could not prove ${T1} was not equal to ${T2}")
-trait =/=[T1, T2]
-object =/= :
-    given [T1, T2](using NotGiven[T1 =:= T2]): =/=[T1, T2] =
-        new =/=[T1, T2] {}
+trait UnifySigMul[Sig1, Sig2]:
+    type Res
+object UnifySigMul:
+    transparent inline given [S]: UnifySigMul[S, SNil] =
+        new UnifySigMul[S, SNil] { type Res = S }
+
+    transparent inline given [S, U, P, ST](using
+        s: InsertSigMul[U, P, S],
+        re: UnifySigMul[s.Res, ST]):
+            UnifySigMul[S, (U, P) %: ST] =
+        new UnifySigMul[S, (U, P) %: ST] { type Res = re.Res }
+
+trait UnifySigDiv[Sig1, Sig2]:
+    type Res
+object UnifySigDiv:
+    transparent inline given [S]: UnifySigDiv[S, SNil] =
+        new UnifySigDiv[S, SNil] { type Res = S }
+
+    transparent inline given [S, U, P, ST](using
+        np: 0 /%- P,
+        s: InsertSigMul[U, np.Res, S],
+        re: UnifySigDiv[s.Res, ST]):
+            UnifySigDiv[S, (U, P) %: ST] =
+        new UnifySigDiv[S, (U, P) %: ST] { type Res = re.Res }
+
+trait UnifySigPow[Power, Sig]:
+    type Res
+object UnifySigPow:
+    transparent inline given [S]: UnifySigPow[0, S] =
+        new UnifySigPow[0, S] { type Res = SNil }
+
+    transparent inline given [P](using P =/= 0): UnifySigPow[P, SNil] =
+        new UnifySigPow[P, SNil] { type Res = SNil }
+
+    transparent inline given [P, U0, P0, ST](using
+        nz: P =/= 0,
+        re: UnifySigPow[P, ST],
+        p: P /%* P0):
+            UnifySigPow[P, (U0, P0) %: ST] =
+        new UnifySigPow[P, (U0, P0) %: ST] { type Res = (U0, p.Res) %: re.Res }
 
 trait InsertSigMul[Unit, Power, Sig]:
     type Res
@@ -39,3 +74,9 @@ object InsertSigMul:
     transparent inline given [U, P, U0, P0, ST0](using une: U =/= U0, re: InsertSigMul[U, P, ST0]):
             InsertSigMul[U, P, (U0, P0) %: ST0] =
         new InsertSigMul[U, P, (U0, P0) %: ST0] { type Res = (U0, P0) %: re.Res }
+
+@implicitNotFound("Could not prove ${T1} was not equal to ${T2}")
+trait =/=[T1, T2]
+object =/= :
+    given [T1, T2](using NotGiven[T1 =:= T2]): =/=[T1, T2] =
+        new =/=[T1, T2] {}

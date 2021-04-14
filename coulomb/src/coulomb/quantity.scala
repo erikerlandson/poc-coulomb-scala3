@@ -51,28 +51,29 @@ object quantity:
 
 end quantity
 
-/*
-extension [V](inline v: V)
-    inline def wu[U]: Quantity[V, U] = ${ macros.wuImpl[V, U]('v) }
-*/
+object qvec:
+    opaque type QVec[V, U] = Vector[V]
+end qvec
 
-extension [V, U](inline q: Quantity[V, U])
-    inline def vg: V = ${ macros.vgImpl[V, U]('q) }
+object test:
+    import coulomb.*
 
-object macros:
-    import scala.quoted.*
+//    inline def addtest(q1: Quantity[Int, Second], q2: Quantity[Int, Second]): Quantity[Int, Second] =
+//        q1 + (q2)
 
-    def vgImpl[V, U](qexpr: Expr[Quantity[V, U]])(using Type[V], Type[U], Quotes): Expr[V] =
-        import quotes.reflect.*
-        Console.withOut(java.io.FileOutputStream("/tmp/q.txt")) {
-            println(s"q: ${qexpr.asTerm.show(using Printer.TreeStructure)}")
-            val qt = TypeTree.of[Quantity[V, U]]
-            println(s"qt: ${qt.show(using Printer.TreeStructure)}")
-        }
-        '{ ${qexpr}.value }
+    // using summonInline and summonFrom makes 'inline' keyword 'viral', if
+    // defining functions having type parameters
+    inline def addTest[V, U](q1: Quantity[V, U], q2: Quantity[V, U]): Quantity[V, U] =
+        q1 + q2
 
 /*
-    def wuImpl[V, U](vexpr: Expr[V])(using Type[V], Type[U], Quotes): Expr[Quantity[V, U]] =
-        '{ vexpr }
+    val lhs = 3.withUnit[Second]
+    val rhs = 5.withUnit[Second]
+    val zzz = lhs + rhs
+
+    val www = addTest(lhs, rhs)
 */
-end macros
+
+
+    val t = 4.withUnit[Second]
+end test

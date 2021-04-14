@@ -63,8 +63,11 @@ object macros:
     import scala.quoted.*
 
     def vgImpl[V, U](qexpr: Expr[Quantity[V, U]])(using Type[V], Type[U], Quotes): Expr[V] =
+        import quotes.reflect.*
         Console.withOut(java.io.FileOutputStream("/tmp/q.txt")) {
-            println(s"q: ${qexpr.show}")
+            println(s"q: ${qexpr.asTerm.show(using Printer.TreeStructure)}")
+            val qt = TypeTree.of[Quantity[V, U]]
+            println(s"qt: ${qt.show(using Printer.TreeStructure)}")
         }
         '{ ${qexpr}.value }
 
@@ -73,4 +76,3 @@ object macros:
         '{ vexpr }
 */
 end macros
-

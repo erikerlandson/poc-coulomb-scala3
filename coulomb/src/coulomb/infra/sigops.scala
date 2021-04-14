@@ -21,30 +21,21 @@ object =/= :
 trait InsertSigMul[Unit, Power, Sig]:
     type Res
 object InsertSigMul:
-    // using `transparent inline` allows the dependent types to be used directly
-    // without the `Aux` idiom
-
     // basis case: inserting to "empty" (unitless) signature
     transparent inline given [U, P]: InsertSigMul[U, P, SNil] =
         new InsertSigMul[U, P, SNil] { type Res = (U, P) %: SNil }
 
     // units match and exponents don't cancel: add their exponents
-    transparent inline given [U, P, P0, ST0](using
-        p: P0 /%+ P,
-        pnz: p.Res =/= 0):
-      InsertSigMul[U, P, (U, P0) %: ST0] =
+    transparent inline given [U, P, P0, ST0](using p: P0 /%+ P, pnz: p.Res =/= 0):
+            InsertSigMul[U, P, (U, P0) %: ST0] =
         new InsertSigMul[U, P, (U, P0) %: ST0] { type Res = (U, p.Res) %: ST0 }
 
     // units match and exponents cancel out, so remove from the signature
-    transparent inline given [U, P, P0, ST0](using
-        p: P0 /%+ P,
-        pz: p.Res =:= 0):
-      InsertSigMul[U, P, (U, P0) %: ST0] =
+    transparent inline given [U, P, P0, ST0](using p: P0 /%+ P, pz: p.Res =:= 0):
+            InsertSigMul[U, P, (U, P0) %: ST0] =
         new InsertSigMul[U, P, (U, P0) %: ST0] { type Res = ST0 }
 
     // units do not match, so insert into tail of the signature
-    transparent inline given [U, P, U0, P0, ST0](using
-        une: U =/= U0,
-        re: InsertSigMul[U, P, ST0]):
-      InsertSigMul[U, P, (U0, P0) %: ST0] =
+    transparent inline given [U, P, U0, P0, ST0](using une: U =/= U0, re: InsertSigMul[U, P, ST0]):
+            InsertSigMul[U, P, (U0, P0) %: ST0] =
         new InsertSigMul[U, P, (U0, P0) %: ST0] { type Res = (U0, P0) %: re.Res }

@@ -5,45 +5,6 @@ import scala.annotation.implicitNotFound
 // rational exponents at the type level
 trait /%[L, R]
 
-/*
-@implicitNotFound("Typelevel rational addition undefined for: ${L} /%+ ${R}")
-trait /%+[L, R]:
-    type Res
-object /%+ :
-    type Eval[L, R, X] = /%+[L, R] { type Res = X }
-    given [L, R](using x: AddRA[L, R]): Eval[L, R, x.Res] =
-        new /%+[L, R] { type Res = x.Res }
-
-@implicitNotFound("Typelevel rational subtraction undefined for: ${L} /%- ${R}")
-trait /%-[L, R]:
-    type Res
-object /%- :
-    type Eval[L, R, X] = /%-[L, R] { type Res = X }
-    given [L, R](using x: SubRA[L, R]): Eval[L, R, x.Res] =
-        new /%-[L, R] { type Res = x.Res }
-
-@implicitNotFound("Typelevel rational multiplication undefined for: ${L} /%* ${R}")
-trait /%*[L, R]:
-    type Res
-object /%* :
-    type Eval[L, R, X] = /%*[L, R] { type Res = X }
-    given [L, R](using x: MulRA[L, R]): Eval[L, R, x.Res] =
-        new /%*[L, R] { type Res = x.Res }
-
-@implicitNotFound("Typelevel rational division undefined for: ${L} /%/ ${R}")
-trait /%/[L, R]:
-    type Res
-object /%/ :
-    type Eval[L, R, X] = /%/[L, R] { type Res = X }
-    given [L, R](using x: DivRA[L, R]): Eval[L, R, x.Res] =
-        new /%/[L, R] { type Res = x.Res }
-
-// Chained implicits for unit signature operations do not operate correctly
-// with pure dependent-type: I need the Eval (aka Aux) types, however
-// The macros will not operate correctly and also support Eval, and so
-// I have this intermediate layer to bridge the two.
-*/
-
 @implicitNotFound("Typelevel rational addition undefined for: /%+[${L}, ${R}]")
 trait /%+[L, R]:
     type Res

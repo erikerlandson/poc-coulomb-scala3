@@ -23,7 +23,7 @@ extension[V, U] (ql: Quantity[V, U])
 
 extension[U] (ql: Quantity[Int, U])
     inline def +(qr: Quantity[Int, U]): Quantity[Int, U] =
-        (summonInline[Addable[Int]]).plus(ql.value, qr.value).withUnit[U]
+        (ql.value + qr.value).withUnit[U]
 
 object quantity:
     opaque type Quantity[V, U] = V
@@ -32,10 +32,16 @@ object quantity:
     // are a way to lift raw values into a Quantity
     // and a way to extract raw values from a quantity
 
+    trait Applier[U]:
+        def apply[V](v: V): Quantity[V, U]
+    object Applier:
+        given [U]: Applier[U] = new Applier[U] { def apply[V](v: V): Quantity[V, U] = v } 
+
     // lift
     object Quantity:
-        def lift[V, U](v: V): Quantity[V, U] = v
-        def lift[U](v: Int): Quantity[Int, U] = v
+        def apply[U](using a: Applier[U]) = a
+        def apply[U](v: Int): Quantity[Int, U] = v
+        def apply[U](v: Double): Quantity[Double, U] = v
     end Quantity
 
     // extract
@@ -57,23 +63,24 @@ end qvec
 
 object test:
     import coulomb.*
-
-//    inline def addtest(q1: Quantity[Int, Second], q2: Quantity[Int, Second]): Quantity[Int, Second] =
-//        q1 + (q2)
-
+/*
     // using summonInline and summonFrom makes 'inline' keyword 'viral', if
     // defining functions having type parameters
     inline def addTest[V, U](q1: Quantity[V, U], q2: Quantity[V, U]): Quantity[V, U] =
         q1 + q2
 
-/*
     val lhs = 3.withUnit[Second]
     val rhs = 5.withUnit[Second]
     val zzz = lhs + rhs
 
+    val zv = zzz.value
+
     val www = addTest(lhs, rhs)
-*/
 
 
     val t = 4.withUnit[Second]
+*/
+    val t1 = Quantity[Second](99)
+    val t2 = Quantity[Second](99.9)
+    val t3 = Quantity[Second]("foo")
 end test

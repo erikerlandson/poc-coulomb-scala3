@@ -5,6 +5,7 @@ import scala.annotation.implicitNotFound
 // rational exponents at the type level
 trait /%[L, R]
 
+/*
 @implicitNotFound("Typelevel rational addition undefined for: ${L} /%+ ${R}")
 trait /%+[L, R]:
     type Res
@@ -41,48 +42,50 @@ object /%/ :
 // with pure dependent-type: I need the Eval (aka Aux) types, however
 // The macros will not operate correctly and also support Eval, and so
 // I have this intermediate layer to bridge the two.
-@implicitNotFound("Typelevel rational addition undefined for: AddRA[${L}, ${R}]")
-trait AddRA[L, R]:
-    type Res
-object AddRA :
-    transparent inline given [L, R]: AddRA[L, R] = ${ macros.addImpl[L, R] }
+*/
 
-@implicitNotFound("Typelevel rational subtraction undefined for: SubRA[${L}, ${R}]")
-trait SubRA[L, R]:
+@implicitNotFound("Typelevel rational addition undefined for: /%+[${L}, ${R}]")
+trait /%+[L, R]:
     type Res
-object SubRA :
-    transparent inline given [L, R]: SubRA[L, R] = ${ macros.subImpl[L, R] }
+object /%+ :
+    transparent inline given [L, R]: /%+[L, R] = ${ macros.addImpl[L, R] }
 
-@implicitNotFound("Typelevel rational multiplication undefined for: MulRA[${L}, ${R}]")
-trait MulRA[L, R]:
+@implicitNotFound("Typelevel rational subtraction undefined for: /%-[${L}, ${R}]")
+trait /%-[L, R]:
     type Res
-object MulRA :
-    transparent inline given [L, R]: MulRA[L, R] = ${ macros.mulImpl[L, R] }
+object /%- :
+    transparent inline given [L, R]: /%-[L, R] = ${ macros.subImpl[L, R] }
 
-@implicitNotFound("Typelevel rational division undefined for: DivRA[${L}, ${R}]")
-trait DivRA[L, R]:
+@implicitNotFound("Typelevel rational multiplication undefined for: /%*[${L}, ${R}]")
+trait /%*[L, R]:
     type Res
-object DivRA :
-    transparent inline given [L, R]: DivRA[L, R] = ${ macros.divImpl[L, R] }
+object /%* :
+    transparent inline given [L, R]: /%*[L, R] = ${ macros.mulImpl[L, R] }
+
+@implicitNotFound("Typelevel rational division undefined for: /%/[${L}, ${R}]")
+trait /%/[L, R]:
+    type Res
+object /%/ :
+    transparent inline given [L, R]: /%/[L, R] = ${ macros.divImpl[L, R] }
 
 object macros:
     import scala.quoted.*
 
-    def addImpl[L, R](using Type[L], Type[R], Quotes): Expr[AddRA[L, R]] =
+    def addImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%+[L, R]] =
         resType(resVal[L, R](_ + _)) match
-            case '[resT] => '{ new _root_.coulomb.rational.AddRA[L, R] { type Res = resT } }
+            case '[resT] => '{ new _root_.coulomb.rational./%+[L, R] { type Res = resT } }
 
-    def subImpl[L, R](using Type[L], Type[R], Quotes): Expr[SubRA[L, R]] =
+    def subImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%-[L, R]] =
         resType(resVal[L, R](_ - _)) match
-            case '[resT] => '{ new _root_.coulomb.rational.SubRA[L, R] { type Res = resT } }
+            case '[resT] => '{ new _root_.coulomb.rational./%-[L, R] { type Res = resT } }
 
-    def mulImpl[L, R](using Type[L], Type[R], Quotes): Expr[MulRA[L, R]] =
+    def mulImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%*[L, R]] =
         resType(resVal[L, R](_ * _)) match
-            case '[resT] => '{ new _root_.coulomb.rational.MulRA[L, R] { type Res = resT } }
+            case '[resT] => '{ new _root_.coulomb.rational./%*[L, R] { type Res = resT } }
 
-    def divImpl[L, R](using Type[L], Type[R], Quotes): Expr[DivRA[L, R]] =
+    def divImpl[L, R](using Type[L], Type[R], Quotes): Expr[/%/[L, R]] =
         resType(resVal[L, R](_ / _)) match
-            case '[resT] => '{ new _root_.coulomb.rational.DivRA[L, R] { type Res = resT } }
+            case '[resT] => '{ new _root_.coulomb.rational./%/[L, R] { type Res = resT } }
 
     def resVal[L, R](op: (Rational, Rational) => Rational)(using Type[L], Type[R], Quotes): Rational =
         import quotes.reflect.*

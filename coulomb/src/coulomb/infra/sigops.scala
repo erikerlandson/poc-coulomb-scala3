@@ -21,19 +21,30 @@ object =/= :
 trait InsertSigMul[Unit, Power, Sig]:
     type Res
 object InsertSigMul:
-    type Eval[U, P, S, R] = InsertSigMul[U, P, S] { type Res = R }
+    // using `transparent inline` allows the dependent types to be used directly
+    // without the `Aux` idiom
 
-    given [U, P]: Eval[U, P, SNil, (U, P) %: SNil] =
+    // basis case: inserting to "empty" (unitless) signature
+    transparent inline given [U, P]: InsertSigMul[U, P, SNil] =
         new InsertSigMul[U, P, SNil] { type Res = (U, P) %: SNil }
 
-    given [U, P, P0, PR, ST0](using /%+.Eval[P0, P, PR], PR =/= 0):
-      Eval[U, P, (U, P0) %: ST0, (U, PR) %: ST0] =
-        new InsertSigMul[U, P, (U, P0) %: ST0] { type Res = (U, PR) %: ST0 }
+    // units match and exponents don't cancel: add their exponents
+    transparent inline given [U, P, P0, ST0](using
+        p: P0 /%+ P,
+        pnz: p.Res =/= 0):
+      InsertSigMul[U, P, (U, P0) %: ST0] =
+        new InsertSigMul[U, P, (U, P0) %: ST0] { type Res = (U, p.Res) %: ST0 }
 
-    given [U, P, P0, ST0](using /%+.Eval[P0, P, 0]):
-      Eval[U, P, (U, P0) %: ST0, ST0] =
+    // units match and exponents cancel out, so remove from the signature
+    transparent inline given [U, P, P0, ST0](using
+        p: P0 /%+ P,
+        pz: p.Res =:= 0):
+      InsertSigMul[U, P, (U, P0) %: ST0] =
         new InsertSigMul[U, P, (U, P0) %: ST0] { type Res = ST0 }
 
-    given [U, P, U0, P0, ST0, ST](using U =/= U0, Eval[U, P, ST0, ST]):
-      Eval[U, P, (U0, P0) %: ST0, (U0, P0) %: ST] =
-        new InsertSigMul[U, P, (U0, P0) %: ST0] { type Res = (U0, P0) %: ST }
+    // units do not match, so insert into tail of the signature
+    transparent inline given [U, P, U0, P0, ST0](using
+        une: U =/= U0,
+        re: InsertSigMul[U, P, ST0]):
+      InsertSigMul[U, P, (U0, P0) %: ST0] =
+        new InsertSigMul[U, P, (U0, P0) %: ST0] { type Res = (U0, P0) %: re.Res }

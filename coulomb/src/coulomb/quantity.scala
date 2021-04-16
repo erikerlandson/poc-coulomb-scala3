@@ -1,5 +1,14 @@
 package coulomb
 
+/** Represents the product of two unit expressions L and R */
+trait %*[L, R]
+
+/** Represents the unit division L / R */
+trait %/[L, R]
+
+/** Represents raising unit expression B to integer power E */
+trait %^[B, E]
+
 import scala.compiletime.{ summonInline, summonFrom }
 
 trait Addable[V]:

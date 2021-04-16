@@ -1,5 +1,7 @@
 package coulomb.define
 
+import scala.language.implicitConversions
+
 import coulomb.infra.UnitTypeName
 import coulomb.rational.Rational
 
@@ -23,13 +25,13 @@ class DerivedUnit[U, D](val coef: Rational, val name: String, val abbv: String) 
 object DerivedUnit:
     def apply[U, D](coef: Rational = Rational(1), name: String = "", abbv: String = "")(using
             ut: UnitTypeName[U]): DerivedUnit[U, D] =
-        require(coef > Rational(0), "Unit coefficients must be strictly > 0")
+        require(coef > 0, "Unit coefficients must be strictly > 0")
         val n = if (name != "") name else ut.name.toLowerCase()
         val a = if (abbv != "") abbv else n.take(1)
         new DerivedUnit[U, D](coef, n, a)
 
 /** methods, constructors and other static definitions for defining prefix units */
 object PrefixUnit:
-    def apply[U](coef: Rational = Rational(1), name: String = "", abbv: String = "")(implicit
+    def apply[U](coef: Rational = 1, name: String = "", abbv: String = "")(implicit
             ut: UnitTypeName[U]): DerivedUnit[U, 1] =
         DerivedUnit[U, 1](coef, name, abbv)

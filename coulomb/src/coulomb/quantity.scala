@@ -74,7 +74,7 @@ object qvec:
 end qvec
 
 object test:
-    import coulomb.*
+    import coulomb.*, coulomb.rational.*
 /*
     // using summonInline and summonFrom makes 'inline' keyword 'viral', if
     // defining functions having type parameters
@@ -95,4 +95,6 @@ object test:
     val t1 = Quantity[Second](99)
     val t2 = Quantity[Second](99.9)
     val t3 = Quantity[Second]("foo")
+
+    val r: Rational = 1
 end test

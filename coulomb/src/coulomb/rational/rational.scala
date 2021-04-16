@@ -104,11 +104,11 @@ object Rational:
             new Rational(n / g, d / g)
 
     given Conversion[Int, Rational] with
-        def apply(v: Int): Rational = Rational(v)
+        inline def apply(v: Int): Rational = Rational(v)
     given Conversion[Long, Rational] with
-        def apply(v: Long): Rational = Rational(v)
+        inline def apply(v: Long): Rational = Rational(v)
     given Conversion[Float, Rational] with
-        def apply(v: Float): Rational = Rational(v)
+        inline def apply(v: Float): Rational = Rational(v)
     given Conversion[Double, Rational] with
-        def apply(v: Double): Rational = Rational(v)
+        inline def apply(v: Double): Rational = Rational(v)
 end Rational

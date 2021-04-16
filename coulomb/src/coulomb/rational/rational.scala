@@ -49,6 +49,21 @@ class Rational private (val n: BigInt, val d: BigInt) extends Serializable:
                 canonical(nr.toLong, dr.toLong)
             else
                 Rational(nr / dr)
+
+    inline def pow(e: Rational): Rational = this.pow(e.n.toInt).root(e.d.toInt)
+
+    inline def toInt: Int = toDouble.toInt
+    inline def toLong: Long = toDouble.toLong
+    inline def toFloat: Float = toDouble.toFloat
+    inline def toDouble: Double = n.toDouble / d.toDouble
+
+    inline def === (rhs: Rational): Boolean = (n == rhs.n) && (d == rhs.d)
+    inline def =/= (rhs: Rational): Boolean = !(this === rhs)
+
+    inline def < (rhs: Rational): Boolean = (n * rhs.d) < (rhs.n * d)
+    inline def > (rhs: Rational): Boolean = rhs < this
+    inline def <= (rhs: Rational): Boolean = !(this > rhs)
+    inline def >= (rhs: Rational): Boolean = !(this < rhs)
 end Rational
 
 object Rational:
@@ -88,10 +103,3 @@ object Rational:
             val g = n.gcd(d)
             new Rational(n / g, d / g)
 end Rational
-
-extension(r: Rational)
-    inline def toInt: Int = r.toDouble.toInt
-    inline def toLong: Long = r.toDouble.toLong
-    inline def toFloat: Float = r.toDouble.toFloat
-    inline def toDouble: Double = r.n.toDouble / r.d.toDouble
-    inline def pow(e: Rational) = r.pow(e.n.toInt).root(e.d.toInt)

@@ -13,9 +13,9 @@ trait UnitTypeName[T]:
 object UnitTypeName:
     import scala.quoted.*
 
-    inline given [T]: UnitTypeName[T] = ${ utn$macro[T] }
+    inline given [T]: UnitTypeName[T] = ${ utnMeta[T] }
 
-    def utn$macro[T](using Type[T], Quotes): Expr[UnitTypeName[T]] =
+    def utnMeta[T](using Type[T], Quotes): Expr[UnitTypeName[T]] =
         import quotes.reflect.*
         def work(tr: TypeRepr): String = tr match
             case AppliedType(tc, ta) =>

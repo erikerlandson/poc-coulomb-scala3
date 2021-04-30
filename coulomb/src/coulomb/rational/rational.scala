@@ -103,6 +103,10 @@ object Rational:
             val g = n.gcd(d)
             new Rational(n / g, d / g)
 
+    val const0 = Rational(0, 1)
+    val const1 = Rational(1, 1)
+    val const2 = Rational(2, 1)
+
     given Conversion[Int, Rational] with
         inline def apply(v: Int): Rational = Rational(v)
     given Conversion[Long, Rational] with

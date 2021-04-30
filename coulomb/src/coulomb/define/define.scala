@@ -14,9 +14,9 @@ trait UnitDefinition:
 abstract class BaseUnit[U] extends UnitDefinition:
     import coulomb.infra.*
     // I can cache the signature with the definition and only compute it once
-    lazy val sig: CanonicalSig[U] { type Res = (U, 1) %: SNil } = new CanonicalSig[U] {
+    final lazy val sig: CanonicalSig[U] { type Res = (U, 1) %: SNil } = new CanonicalSig[U] {
         type Res = (U, 1) %: SNil
-        val coef = CanonicalSig.ratval1
+        val coef = Rational.const1
     }
 
     override def toString = s"BaseUnit($name, $abbv)"

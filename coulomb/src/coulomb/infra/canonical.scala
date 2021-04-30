@@ -9,12 +9,10 @@ trait CanonicalSig[U]:
     val coef: Rational
 
 object CanonicalSig:
-    val ratval1 = Rational(1)
-
     // I can reuse this instead of creating new copies each time
-    lazy val sig1: CanonicalSig[1] { type Res = SNil } = new CanonicalSig[1] {
+    final lazy val sig1: CanonicalSig[1] { type Res = SNil } = new CanonicalSig[1] {
         type Res = SNil
-        val coef = ratval1
+        val coef = Rational.const1
     }
 
     transparent inline given CanonicalSig[1] = sig1

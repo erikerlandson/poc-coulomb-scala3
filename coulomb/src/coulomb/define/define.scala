@@ -2,36 +2,27 @@ package coulomb.define
 
 import scala.language.implicitConversions
 
-import coulomb.infra.UnitTypeName
 import coulomb.rational.Rational
 
 /** Methods and values common to all unit and temperature definitions */
 trait UnitDefinition:
     /** the full name of a unit, e.g. "meter" */
-    def name: String
+    val name: String
     /** the abbreviation of a unit, e.g. "m" for "meter" */
-    def abbv: String
+    val abbv: String
 
-class BaseUnit[U](val name: String, val abbv: String) extends UnitDefinition:
+abstract class BaseUnit[U] extends UnitDefinition:
+    import coulomb.infra.*
+    // I can cache the signature with the definition and only compute it once
+    lazy val sig: CanonicalSig[U] { type Res = (U, 1) %: SNil } = new CanonicalSig[U] {
+        type Res = (U, 1) %: SNil
+        val coef = CanonicalSig.ratval1
+    }
+
     override def toString = s"BaseUnit($name, $abbv)"
-object BaseUnit:
-    def apply[U](name: String = "", abbv: String = "")(using ut: UnitTypeName[U]): BaseUnit[U] =
-        val n = if (name != "") name else ut.name.toLowerCase()
-        val a = if (abbv != "") abbv else n.take(1)
-        new BaseUnit[U](n, a)
 
-class DerivedUnit[U, D](val coef: Rational, val name: String, val abbv: String) extends UnitDefinition:
+abstract class DerivedUnit[U, D] extends UnitDefinition:
+    val coef: Rational
     override def toString = s"DerivedUnit($coef, $name, $abbv)"
-object DerivedUnit:
-    def apply[U, D](coef: Rational = Rational(1), name: String = "", abbv: String = "")(using
-            ut: UnitTypeName[U]): DerivedUnit[U, D] =
-        require(coef > 0, "Unit coefficients must be strictly > 0")
-        val n = if (name != "") name else ut.name.toLowerCase()
-        val a = if (abbv != "") abbv else n.take(1)
-        new DerivedUnit[U, D](coef, n, a)
 
-/** methods, constructors and other static definitions for defining prefix units */
-object PrefixUnit:
-    def apply[U](coef: Rational = 1, name: String = "", abbv: String = "")(implicit
-            ut: UnitTypeName[U]): DerivedUnit[U, 1] =
-        DerivedUnit[U, 1](coef, name, abbv)
+abstract class PrefixUnit[U] extends DerivedUnit[U, 1]

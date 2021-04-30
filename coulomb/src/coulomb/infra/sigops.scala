@@ -5,6 +5,12 @@ import scala.annotation.implicitNotFound
 
 import coulomb.rational.*
 
+@implicitNotFound("Type ${R} is not a valid typelevel Rational or integer literal type")
+trait RatVal[R]:
+    val value: Rational
+object RatVal:
+    inline given [R]: RatVal[R] = ${ sigopsMeta.ratval[R] }
+
 trait SNil
 trait %:[Head, Tail]
 
@@ -32,6 +38,11 @@ object UnifySigPow:
 object sigopsMeta:
     import scala.quoted.*
     import scala.language.implicitConversions
+
+    def ratval[R](using Quotes, Type[R]): Expr[RatVal[R]] =
+        import quotes.reflect.*
+        val ratexp(r) = TypeRepr.of[R]
+        '{ new RatVal[R] { val value = Rational(${Expr(r.n.toInt)}, ${Expr(r.d.toInt)}) } }
 
     def unifyMulMeta[Sig1, Sig2](using Quotes, Type[Sig1], Type[Sig2]): Expr[UnifySigMul[Sig1, Sig2]] =
         import quotes.reflect.*

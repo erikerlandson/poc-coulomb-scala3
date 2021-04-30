@@ -24,7 +24,8 @@ object Addable:
     given Addable[String] with
         inline def plus(x: String, y: String): String = x ++ y
 
-trait Second
+//trait Second
+import si.Second
 
 export quantity.Quantity as Quantity
 export quantity.withUnit as withUnit
@@ -96,5 +97,42 @@ object test:
     val t2 = Quantity[Second](99.9)
     val t3 = Quantity[Second]("foo")
 
-    val r: Rational = 1
+    //val r: Rational = 1
 end test
+
+object si:
+    import coulomb.rational.Rational
+    import coulomb.define.*
+
+    trait Meter
+    given BaseUnit[Meter] with
+        val name = "meter"
+        val abbv = "m"
+
+    trait Kilogram
+    given BaseUnit[Kilogram] with
+        val name = "kilogram"
+        val abbv = "kg"
+
+    trait Second
+    given BaseUnit[Second] with
+        val name = "second"
+        val abbv = "s"
+
+    trait Liter
+    given DerivedUnit[Liter, Meter %* Meter %* Meter] with
+        val name = "liter"
+        val abbv = "L"
+        val coef = Rational(1, 1000)
+
+    trait Kilo
+    given PrefixUnit[Kilo] with
+        val name = "kilo"
+        val abbv = "k"
+        val coef = Rational(1000)
+
+    trait Yard
+    given yard: DerivedUnit[Yard, Meter] with
+        val name = "yard"
+        val abbv = "yd"
+        val coef = Rational(9144, 10000)

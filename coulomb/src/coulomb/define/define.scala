@@ -18,11 +18,14 @@ abstract class BaseUnit[U] extends UnitDefinition:
         type Res = (U, 1) %: SNil
         val coef = Rational.const1
     }
+    final lazy val strict: StrictUnitExpr[U] = new StrictUnitExpr[U] {}
 
     override def toString = s"BaseUnit($name, $abbv)"
 
 abstract class DerivedUnit[U, D] extends UnitDefinition:
+    import coulomb.infra.*
     val coef: Rational
+    final lazy val strict: StrictUnitExpr[U] = new StrictUnitExpr[U] {}
     override def toString = s"DerivedUnit($coef, $name, $abbv)"
 
 abstract class PrefixUnit[U] extends DerivedUnit[U, 1]

@@ -13,14 +13,14 @@ trait CanonicalSig[U]:
 
 object CanonicalSig:
     // I can reuse this instead of creating new copies each time
-    final lazy val sig1: CanonicalSig[1] { type Res = SNil } = new CanonicalSig[1]:
+    final lazy val canonical1: CanonicalSig[1] { type Res = SNil } = new CanonicalSig[1]:
         type Res = SNil
         val coef = Rational.const1
 
-    transparent inline given CanonicalSig[1] = sig1
+    transparent inline given CanonicalSig[1] = canonical1
 
     // cache signature objects on the BaseUnit itself so we can reuse them
-    transparent inline given [U](using bu: BaseUnit[U]): CanonicalSig[U] = bu.sig
+    transparent inline given [U](using bu: BaseUnit[U]): CanonicalSig[U] = bu.canonical
 
     transparent inline given [U, D](using
         du: DerivedUnit[U, D], ds: CanonicalSig[D]):

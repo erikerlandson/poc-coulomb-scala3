@@ -15,7 +15,7 @@ abstract class BaseUnit[U] extends UnitDefinition:
     import coulomb.infra.*
 
     // I can cache the signature with the definition and only compute it once
-    final lazy val sig: CanonicalSig[U] { type Res = (U, 1) %: SNil } = new CanonicalSig[U] {
+    final lazy val canonical: CanonicalSig[U] { type Res = (U, 1) %: SNil } = new CanonicalSig[U] {
         type Res = (U, 1) %: SNil
         val coef = Rational.const1
     }

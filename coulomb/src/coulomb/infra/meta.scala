@@ -10,7 +10,7 @@ object meta:
     def ratval[R](using Quotes, Type[R]): Expr[RatVal[R]] =
         import quotes.reflect.*
         val ratexp(r) = TypeRepr.of[R]
-        '{ new RatVal[R] { val value = Rational(${Expr(r.n.toInt)}, ${Expr(r.d.toInt)}) } }
+        '{ new RatVal[R] { val value = Rational(${Expr(r.n)}, ${Expr(r.d)}) } }
 
     def unifyMulMeta[Sig1, Sig2](using Quotes, Type[Sig1], Type[Sig2]): Expr[UnifySigMul[Sig1, Sig2]] =
         import quotes.reflect.*

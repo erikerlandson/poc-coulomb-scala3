@@ -42,7 +42,7 @@ object meta:
             op: (Rational, Rational) => Rational): quotes.reflect.TypeRepr =
         import quotes.reflect.*
         sig match
-            case signil() => sigcons(u, e, signil())
+            case signil() => sigcons(u, op(Rational(0), e), signil())
             case sigcons(u0, e0, tail) if (u =:= u0) => 
                 val ei = op(e0, e)
                 if (ei === 0) tail else sigcons(u, ei, tail)

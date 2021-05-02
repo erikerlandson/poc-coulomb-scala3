@@ -100,13 +100,7 @@ object StrictUnitExpr:
 trait RatVal[R]:
     val value: Rational
 object RatVal:
-    given rv0: RatVal[0] with
-        val value = Rational.const0
-
-    given rv1: RatVal[1] with
-        val value = Rational.const1
-
-    given rv2: RatVal[2] with
-        val value = Rational.const2
-
+    given rv0: RatVal[0] with { val value = Rational.const0 }
+    given rv1: RatVal[1] with { val value = Rational.const1 }
+    given rv2: RatVal[2] with { val value = Rational.const2 }
     inline given [R]: RatVal[R] = ${ meta.ratval[R] }

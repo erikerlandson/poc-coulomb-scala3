@@ -1,6 +1,7 @@
 package coulomb.infra
 
 import scala.util.NotGiven
+import scala.annotation.implicitNotFound
 
 import coulomb.rational.Rational
 import coulomb.{ %*, %/, %^ }
@@ -71,3 +72,18 @@ object StrictUnitExpr:
     given s3[L, R]: StrictUnitExpr[L %* R] = new StrictUnitExpr[L %* R] {}
     given s4[L, R]: StrictUnitExpr[L %/ R] = new StrictUnitExpr[L %/ R] {}
     given s5[L, R]: StrictUnitExpr[L %^ R] = new StrictUnitExpr[L %^ R] {}
+
+@implicitNotFound("Type ${R} is not a valid typelevel Rational or integer literal type")
+trait RatVal[R]:
+    val value: Rational
+object RatVal:
+    given rv0: RatVal[0] with
+        val value = Rational.const0
+
+    given rv1: RatVal[1] with
+        val value = Rational.const1
+
+    given rv2: RatVal[2] with
+        val value = Rational.const2
+
+    inline given [R]: RatVal[R] = ${ meta.ratval[R] }

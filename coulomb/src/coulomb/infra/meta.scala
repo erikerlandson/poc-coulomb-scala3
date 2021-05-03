@@ -6,8 +6,7 @@ import coulomb.{ %*, %/, %^ }
 import coulomb.define.*
 
 trait Sig[U]:
-    type Res
-    val coef: Rational
+    val canonical: CanonicalSig[U]
 object Sig:
     transparent inline given [U]: Sig[U] = ${ meta.testsig[U] }
 
@@ -21,13 +20,63 @@ object meta:
         println(s"bu= ${summonString[BaseUnit[U]]}")
         println(s"du= ${summonString[DerivedUnit[U, _]]}")
         println(s"iu= ${summonString[ImpliedBU[U]]}")
-        '{ new Sig[U] { type Res = Nothing; val coef = Rational.const1 } }
+        val cs = sigrec(TypeRepr.of[U]).asInstanceOf[Expr[CanonicalSig[U]]]
+        //'{ new Sig[U] { val canonical = new CanonicalSig[U] { type Res = Nothing; val coef = Rational.const1 } } }
+        '{ new Sig[U] { val canonical = ${cs} } }
+
+    def testcanonical[U](using Quotes, Type[U]): Expr[CanonicalSig[U]] =
+        import quotes.reflect.*
+        //println(s"du= ${summonString[DerivedUnit[U, _]]}")
+        Implicits.search(TypeRepr.of[DerivedUnit[U, _]]) match
+            case iss: ImplicitSearchSuccess =>
+                val t = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit].typeSymbol)
+                println(s"ZZZ: t= $t")
+                val AppliedType(tc, args) = t
+                println(s"tc= ${tc.typeSymbol.name}, args= ${args.map(_.typeSymbol.name)}")
+                println(s"XXX: ${iss.tree.underlying.tpe.widenTermRefByName}")
+            case _ => ()
+        val cs = sigrec(TypeRepr.of[U]).asInstanceOf[Expr[CanonicalSig[U]]]
+        cs
+
+    def sigrec(using Quotes)(tr: quotes.reflect.TypeRepr): Expr[CanonicalSig[?]] =
+        import quotes.reflect.*
+        tr match
+            case unitless(sig) => sig
+            case baseunit(sig) => sig
+            case derivedunit(sig) => sig
+            case _ => { report.error("oh no"); csErr }
+
+    def csErr(using Quotes): Expr[CanonicalSig[?]] =
+        '{ new CanonicalSig[Nothing] { type Res = Nothing; val coef = Rational.const0 } }
+
+    object unitless:
+        def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[1]]] =
+            import quotes.reflect.*
+            if (!(tr =:= TypeRepr.of[1])) then None else Some('{ CanonicalSig.canonical1 })
+
+    object baseunit:
+        def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
+            import quotes.reflect.*
+            Implicits.search(TypeRepr.of[BaseUnit].appliedTo(tr)) match
+                case iss: ImplicitSearchSuccess =>
+                    val bu = iss.tree.asExpr.asInstanceOf[Expr[BaseUnit[_]]]
+                    Some('{ ${bu}.canonical })
+                case _ => None
+
+    object derivedunit:
+        def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
+            import quotes.reflect.*
+            Implicits.search(TypeRepr.of[DerivedUnit].appliedTo(tr)) match
+                case iss: ImplicitSearchSuccess =>
+                    val du = iss.tree.asExpr
+                    println(s"du= ${du.show}")
+                    None
+                case _ => None
 
     def summonString[T](using Quotes, Type[T]): String =
         import quotes.reflect.*
         Expr.summon[T] match
             case None => "None"
-            //case Some(e) => s"${e.show}"
             case Some(e) => s"${e.show}   ${e.asTerm.show(using Printer.TreeStructure)}"
 
     def ratval[R](using Quotes, Type[R]): Expr[RatVal[R]] =

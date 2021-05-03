@@ -17,6 +17,9 @@ object CanonicalSig:
         type Res = SNil
         val coef = Rational.const1
 
+    transparent inline given [U]: CanonicalSig[U] = ${ meta.testcanonical[U] }
+
+/*
     transparent inline given CanonicalSig[1] = canonical1
 
     // cache signature objects on the BaseUnit itself so we can reuse them
@@ -54,6 +57,8 @@ object CanonicalSig:
         new CanonicalSig[T]:
             type Res = (T, 1) %: SNil
             val coef = Rational.const1
+*/
+
 
 trait StandardSig[U]:
     type Res

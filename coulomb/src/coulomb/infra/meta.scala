@@ -3,9 +3,32 @@ package coulomb.infra
 import coulomb.rational.{ Rational, /% }
 import coulomb.{ %*, %/, %^ }
 
+import coulomb.define.*
+
+trait Sig[U]:
+    type Res
+    val coef: Rational
+object Sig:
+    transparent inline given [U]: Sig[U] = ${ meta.testsig[U] }
+
 object meta:
     import scala.quoted.*
     import scala.language.implicitConversions
+
+    def testsig[U](using Quotes, Type[U]): Expr[Sig[U]] =
+        import quotes.reflect.*
+        //val bu = Expr.summon[BaseUnit[U]]
+        println(s"bu= ${summonString[BaseUnit[U]]}")
+        println(s"du= ${summonString[DerivedUnit[U, _]]}")
+        println(s"iu= ${summonString[ImpliedBU[U]]}")
+        '{ new Sig[U] { type Res = Nothing; val coef = Rational.const1 } }
+
+    def summonString[T](using Quotes, Type[T]): String =
+        import quotes.reflect.*
+        Expr.summon[T] match
+            case None => "None"
+            //case Some(e) => s"${e.show}"
+            case Some(e) => s"${e.show}   ${e.asTerm.show(using Printer.TreeStructure)}"
 
     def ratval[R](using Quotes, Type[R]): Expr[RatVal[R]] =
         import quotes.reflect.*

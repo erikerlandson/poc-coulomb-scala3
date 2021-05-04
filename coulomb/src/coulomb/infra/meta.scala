@@ -26,41 +26,23 @@ object meta:
 
     def testcanonical[U](using Quotes, Type[U]): Expr[CanonicalSig[U]] =
         import quotes.reflect.*
-/*
-        Implicits.search(TypeRepr.of[DerivedUnit[U, _]]) match
-            case iss: ImplicitSearchSuccess =>
-                val t = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit].typeSymbol)
-                val AppliedType(tc, args) = t
-                println(s"tc= ${tc.typeSymbol.name}, args= ${args.map(_.typeSymbol.name)}")
-            case _ => ()
-*/
-        val (cs, _, _, _) = sigrec(TypeRepr.of[U])
+        val (cs, _, _) = sigrec(TypeRepr.of[U])
         cs.asInstanceOf[Expr[CanonicalSig[U]]]
 
     // returns tuple: (expr-for-sig, expr-for-coef, coef-is-provably-1, type-of-Res)
     def sigrec(using Quotes)(u: quotes.reflect.TypeRepr):
-            (Expr[CanonicalSig[?]], Expr[Rational], Boolean, quotes.reflect.TypeRepr) =
+            (Expr[CanonicalSig[?]], Expr[Rational], quotes.reflect.TypeRepr) =
         import quotes.reflect.*
         u match
-            case unitless(sig) =>
-                (sig, '{ Rational.const1 }, true, signil())
-            case baseunit(sig) =>
-                (sig, '{ Rational.const1 }, true, sigcons(u, Rational.const1, signil()))
-            case derivedunit(sig) => { report.error("oh no"); csErr }
+            case unitless(can) => (can, '{ Rational.const1 }, signil())
+            case baseunit(can) => (can, '{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
+            case derivedunit(can, coef, sig) => (can, coef, sig)
             case _ => { report.error("oh no"); csErr }
 
-    def csErr(using Quotes):
-            (Expr[CanonicalSig[?]], Expr[Rational], Boolean, quotes.reflect.TypeRepr) =
-        import quotes.reflect.*
-        ('{ new CanonicalSig[Nothing] { type Res = Nothing; val coef = Rational.const0 } },
-         '{ Rational.const0 },
-         false,
-         TypeRepr.of[Nothing])
-         
     object unitless:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[1]]] =
             import quotes.reflect.*
-            if (!(u =:= TypeRepr.of[1])) then None else Some('{ CanonicalSig.canonical1 })
+            if (u =:= TypeRepr.of[1]) then Some('{ CanonicalSig.canonical1 }) else None 
 
     object baseunit:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
@@ -72,13 +54,30 @@ object meta:
                 case _ => None
 
     object derivedunit:
-        def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
+        def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[(Expr[CanonicalSig[?]], Expr[Rational], quotes.reflect.TypeRepr)] =
             import quotes.reflect.*
-            Implicits.search(TypeRepr.of[DerivedUnit].appliedTo(u)) match
+            Implicits.search(TypeRepr.of[DerivedUnit].appliedTo(List(u, TypeBounds.empty))) match
                 case iss: ImplicitSearchSuccess =>
                     val AppliedType(_, List(_, d)) = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit].typeSymbol)
-                    None
+                    val (_, dcoef, dsig) = sigrec(d)
+                    val du = iss.tree.asExpr.asInstanceOf[Expr[DerivedUnit[_, _]]]
+                    val ucoef = if (coefIs1(dcoef)) '{ ${du}.coef } else '{ $dcoef * ${du}.coef }
+                    val ucan = (u.asType, dsig.asType) match
+                        case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
+                    Some((ucan, ucoef, dsig))
                 case _ => None
+
+    // evaluating these at compilation time is not working, so the best I currently
+    // know how to do is structural test for Rational.const1
+    def coefIs1(using Quotes)(expr: Expr[Rational]): Boolean =
+        expr.matches('{ Rational.const1 })
+
+    def csErr(using Quotes):
+            (Expr[CanonicalSig[?]], Expr[Rational], quotes.reflect.TypeRepr) =
+        import quotes.reflect.*
+        ('{ new CanonicalSig[Nothing] { type Res = Nothing; val coef = Rational.const0 } },
+         '{ Rational.const0 },
+         TypeRepr.of[Nothing])
 
     // keep this for reference
     def summonString[T](using Quotes, Type[T]): String =

@@ -61,6 +61,9 @@ object meta:
                     val AppliedType(_, List(_, d)) = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit].typeSymbol)
                     val (_, dcoef, dsig) = sigrec(d)
                     val du = iss.tree.asExpr.asInstanceOf[Expr[DerivedUnit[_, _]]]
+                    // I currently have no way to test if ${du}.coef is equal to 1: it can be
+                    // declared with any value and I have not been able to evaluate these expressions
+                    // at meta/compile time.
                     val ucoef = if (coefIs1(dcoef)) '{ ${du}.coef } else '{ $dcoef * ${du}.coef }
                     val ucan = (u.asType, dsig.asType) match
                         case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }

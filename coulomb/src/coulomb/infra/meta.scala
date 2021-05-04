@@ -26,53 +26,61 @@ object meta:
 
     def testcanonical[U](using Quotes, Type[U]): Expr[CanonicalSig[U]] =
         import quotes.reflect.*
-        //println(s"du= ${summonString[DerivedUnit[U, _]]}")
+/*
         Implicits.search(TypeRepr.of[DerivedUnit[U, _]]) match
             case iss: ImplicitSearchSuccess =>
                 val t = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit].typeSymbol)
-                println(s"ZZZ: t= $t")
                 val AppliedType(tc, args) = t
                 println(s"tc= ${tc.typeSymbol.name}, args= ${args.map(_.typeSymbol.name)}")
-                println(s"XXX: ${iss.tree.underlying.tpe.widenTermRefByName}")
             case _ => ()
-        val cs = sigrec(TypeRepr.of[U]).asInstanceOf[Expr[CanonicalSig[U]]]
-        cs
+*/
+        val (cs, _, _, _) = sigrec(TypeRepr.of[U])
+        cs.asInstanceOf[Expr[CanonicalSig[U]]]
 
-    def sigrec(using Quotes)(tr: quotes.reflect.TypeRepr): Expr[CanonicalSig[?]] =
+    // returns tuple: (expr-for-sig, expr-for-coef, coef-is-provably-1, type-of-Res)
+    def sigrec(using Quotes)(u: quotes.reflect.TypeRepr):
+            (Expr[CanonicalSig[?]], Expr[Rational], Boolean, quotes.reflect.TypeRepr) =
         import quotes.reflect.*
-        tr match
-            case unitless(sig) => sig
-            case baseunit(sig) => sig
-            case derivedunit(sig) => sig
+        u match
+            case unitless(sig) =>
+                (sig, '{ Rational.const1 }, true, signil())
+            case baseunit(sig) =>
+                (sig, '{ Rational.const1 }, true, sigcons(u, Rational.const1, signil()))
+            case derivedunit(sig) => { report.error("oh no"); csErr }
             case _ => { report.error("oh no"); csErr }
 
-    def csErr(using Quotes): Expr[CanonicalSig[?]] =
-        '{ new CanonicalSig[Nothing] { type Res = Nothing; val coef = Rational.const0 } }
-
+    def csErr(using Quotes):
+            (Expr[CanonicalSig[?]], Expr[Rational], Boolean, quotes.reflect.TypeRepr) =
+        import quotes.reflect.*
+        ('{ new CanonicalSig[Nothing] { type Res = Nothing; val coef = Rational.const0 } },
+         '{ Rational.const0 },
+         false,
+         TypeRepr.of[Nothing])
+         
     object unitless:
-        def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[1]]] =
+        def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[1]]] =
             import quotes.reflect.*
-            if (!(tr =:= TypeRepr.of[1])) then None else Some('{ CanonicalSig.canonical1 })
+            if (!(u =:= TypeRepr.of[1])) then None else Some('{ CanonicalSig.canonical1 })
 
     object baseunit:
-        def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
+        def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
             import quotes.reflect.*
-            Implicits.search(TypeRepr.of[BaseUnit].appliedTo(tr)) match
+            Implicits.search(TypeRepr.of[BaseUnit].appliedTo(u)) match
                 case iss: ImplicitSearchSuccess =>
                     val bu = iss.tree.asExpr.asInstanceOf[Expr[BaseUnit[_]]]
                     Some('{ ${bu}.canonical })
                 case _ => None
 
     object derivedunit:
-        def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
+        def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =
             import quotes.reflect.*
-            Implicits.search(TypeRepr.of[DerivedUnit].appliedTo(tr)) match
+            Implicits.search(TypeRepr.of[DerivedUnit].appliedTo(u)) match
                 case iss: ImplicitSearchSuccess =>
-                    val du = iss.tree.asExpr
-                    println(s"du= ${du.show}")
+                    val AppliedType(_, List(_, d)) = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit].typeSymbol)
                     None
                 case _ => None
 
+    // keep this for reference
     def summonString[T](using Quotes, Type[T]): String =
         import quotes.reflect.*
         Expr.summon[T] match

@@ -5,26 +5,11 @@ import coulomb.{ %*, %/, %^ }
 
 import coulomb.define.*
 
-trait Sig[U]:
-    val canonical: CanonicalSig[U]
-object Sig:
-    transparent inline given [U]: Sig[U] = ${ meta.testsig[U] }
-
 object meta:
     import scala.quoted.*
     import scala.language.implicitConversions
 
-    def testsig[U](using Quotes, Type[U]): Expr[Sig[U]] =
-        import quotes.reflect.*
-        //val bu = Expr.summon[BaseUnit[U]]
-        println(s"bu= ${summonString[BaseUnit[U]]}")
-        println(s"du= ${summonString[DerivedUnit[U, _]]}")
-        println(s"iu= ${summonString[ImpliedBU[U]]}")
-        val cs = sigrec(TypeRepr.of[U]).asInstanceOf[Expr[CanonicalSig[U]]]
-        //'{ new Sig[U] { val canonical = new CanonicalSig[U] { type Res = Nothing; val coef = Rational.const1 } } }
-        '{ new Sig[U] { val canonical = ${cs} } }
-
-    def testcanonical[U](using Quotes, Type[U]): Expr[CanonicalSig[U]] =
+    def canonical[U](using Quotes, Type[U]): Expr[CanonicalSig[U]] =
         import quotes.reflect.*
         val (cs, _, _) = sigrec(TypeRepr.of[U])
         cs.asInstanceOf[Expr[CanonicalSig[U]]]
@@ -74,7 +59,19 @@ object meta:
                     val ucan = (u.asType, usig.asType) match
                         case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
                     (ucan, ucoef, usig)
+            case _ if (!strictunitexprs) =>
+                val ucoef = '{ Rational.const1 }
+                val usig = sigcons(u, Rational.const1, signil())
+                val ucan = (u.asType, usig.asType) match
+                    case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
+                (ucan, ucoef, usig)
             case _ => { report.error(s"unknown unit expression in sigrec: $u"); csErr }
+
+    def strictunitexprs(using Quotes): Boolean =
+        import quotes.reflect.*
+        Implicits.search(TypeRepr.of[coulomb.policy.StrictUnitExpressions]) match
+                case _: ImplicitSearchSuccess => true
+                case _ => false
 
     object unitless:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[1]]] =
@@ -126,10 +123,12 @@ object meta:
             case None => "None"
             case Some(e) => s"${e.show}   ${e.asTerm.show(using Printer.TreeStructure)}"
 
+/*
     def ratval[R](using Quotes, Type[R]): Expr[RatVal[R]] =
         import quotes.reflect.*
         val ratexp(r) = TypeRepr.of[R]
         '{ new RatVal[R] { val value = Rational(${Expr(r.n)}, ${Expr(r.d)}) } }
+*/
 
     def unifyMulMeta[Sig1, Sig2](using Quotes, Type[Sig1], Type[Sig2]): Expr[UnifySigMul[Sig1, Sig2]] =
         import quotes.reflect.*

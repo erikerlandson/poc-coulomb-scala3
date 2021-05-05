@@ -17,9 +17,11 @@ object CanonicalSig:
         type Res = SNil
         val coef = Rational.const1
 
-    transparent inline given [U]: CanonicalSig[U] = ${ meta.testcanonical[U] }
+    transparent inline given [U]: CanonicalSig[U] = ${ meta.canonical[U] }
 
-/*
+/* Using metaprogramming implementation makes the following obsolete, but I'm going to keep it around
+   For a while
+
     transparent inline given CanonicalSig[1] = canonical1
 
     // cache signature objects on the BaseUnit itself so we can reuse them
@@ -57,32 +59,6 @@ object CanonicalSig:
         new CanonicalSig[T]:
             type Res = (T, 1) %: SNil
             val coef = Rational.const1
-*/
-
-
-trait StandardSig[U]:
-    type Res
-
-object StandardSig:
-    final lazy val sig1: StandardSig[1] { type Res = SNil } = new StandardSig[1]:
-        type Res = SNil
-    transparent inline given StandardSig[1] = sig1
-    transparent inline given s1[U](using bu: BaseUnit[U]): StandardSig[U] = bu.standard
-    transparent inline given s2[U](using du: DerivedUnit[U, _]): StandardSig[U] = du.standard
-    transparent inline given s3[L, R](using
-        sl: StandardSig[L], sr: StandardSig[R], rs: UnifySigMul[sl.Res, sr.Res]):
-            StandardSig[L %* R] =
-        new StandardSig[L %* R] { type Res = rs.Res }
-    transparent inline given s4[L, R](using
-        sl: StandardSig[L], sr: StandardSig[R], rs: UnifySigDiv[sl.Res, sr.Res]):
-            StandardSig[L %/ R] =
-        new StandardSig[L %/ R] { type Res = rs.Res }
-    transparent inline given s5[U, E](using
-        su: StandardSig[U], rs: UnifySigPow[E, su.Res]):
-            StandardSig[U %^ E] =
-        new StandardSig[U %^ E] { type Res = rs.Res }
-    transparent inline given s6[T](using bu: ImpliedBU[T]): StandardSig[T] =
-        new StandardSig[T] { type Res = (T, 1) %: SNil }
 
 trait ImpliedBU[T]
 object ImpliedBU:
@@ -109,3 +85,31 @@ object RatVal:
     given rv1: RatVal[1] with { val value = Rational.const1 }
     given rv2: RatVal[2] with { val value = Rational.const2 }
     inline given [R]: RatVal[R] = ${ meta.ratval[R] }
+*/
+
+/* I believe this will not be needed in ultimate meta implementation
+trait StandardSig[U]:
+    type Res
+
+object StandardSig:
+    final lazy val sig1: StandardSig[1] { type Res = SNil } = new StandardSig[1]:
+        type Res = SNil
+    transparent inline given StandardSig[1] = sig1
+    transparent inline given s1[U](using bu: BaseUnit[U]): StandardSig[U] = bu.standard
+    transparent inline given s2[U](using du: DerivedUnit[U, _]): StandardSig[U] = du.standard
+    transparent inline given s3[L, R](using
+        sl: StandardSig[L], sr: StandardSig[R], rs: UnifySigMul[sl.Res, sr.Res]):
+            StandardSig[L %* R] =
+        new StandardSig[L %* R] { type Res = rs.Res }
+    transparent inline given s4[L, R](using
+        sl: StandardSig[L], sr: StandardSig[R], rs: UnifySigDiv[sl.Res, sr.Res]):
+            StandardSig[L %/ R] =
+        new StandardSig[L %/ R] { type Res = rs.Res }
+    transparent inline given s5[U, E](using
+        su: StandardSig[U], rs: UnifySigPow[E, su.Res]):
+            StandardSig[U %^ E] =
+        new StandardSig[U %^ E] { type Res = rs.Res }
+    transparent inline given s6[T](using bu: ImpliedBU[T]): StandardSig[T] =
+        new StandardSig[T] { type Res = (T, 1) %: SNil }
+
+*/

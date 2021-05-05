@@ -29,7 +29,7 @@ object meta:
         val (cs, _, _) = sigrec(TypeRepr.of[U])
         cs.asInstanceOf[Expr[CanonicalSig[U]]]
 
-    // returns tuple: (expr-for-sig, expr-for-coef, coef-is-provably-1, type-of-Res)
+    // returns tuple: (expr-for-canonical, expr-for-coef, type-of-Res)
     def sigrec(using Quotes)(u: quotes.reflect.TypeRepr):
             (Expr[CanonicalSig[?]], Expr[Rational], quotes.reflect.TypeRepr) =
         import quotes.reflect.*
@@ -37,12 +37,47 @@ object meta:
             case unitless(can) => (can, '{ Rational.const1 }, signil())
             case baseunit(can) => (can, '{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
             case derivedunit(can, coef, sig) => (can, coef, sig)
-            case _ => { report.error("oh no"); csErr }
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%*]) =>
+                val (_, lcoef, lsig) = sigrec(lu)
+                val (_, rcoef, rsig) = sigrec(ru)
+                val ucoef = if (coefIs1(lcoef)) rcoef else if (coefIs1(rcoef)) lcoef else '{ $lcoef * $rcoef }
+                val usig = unifyOp(lsig, rsig, _ + _)
+                val ucan = (u.asType, usig.asType) match
+                    case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
+                (ucan, ucoef, usig)
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%/]) =>
+                val (_, lcoef, lsig) = sigrec(lu)
+                val (_, rcoef, rsig) = sigrec(ru)
+                val ucoef = if (coefIs1(rcoef)) lcoef else '{ $lcoef / $rcoef }
+                val usig = unifyOp(lsig, rsig, _ - _)
+                val ucan = (u.asType, usig.asType) match
+                    case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
+                (ucan, ucoef, usig)
+            case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[%^]) =>
+                val (_, bcoef, bsig) = sigrec(b)
+                val ratexp(e) = p
+                if (e === Rational.const0)
+                    val ucoef = '{ Rational.const1 }
+                    val usig = signil()
+                    val ucan = (u.asType, usig.asType) match
+                        case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
+                    (ucan, ucoef, usig)
+                else if (e === Rational.const1)
+                    val ucan = (u.asType, bsig.asType) match
+                        case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $bcoef } }
+                    (ucan, bcoef, bsig)
+                else
+                    val ucoef = if (coefIs1(bcoef)) bcoef else '{ ${bcoef}.pow(Rational(${Expr(e.n)}, ${Expr(e.d)})) }
+                    val usig = unifyPow(p, bsig)
+                    val ucan = (u.asType, usig.asType) match
+                        case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
+                    (ucan, ucoef, usig)
+            case _ => { report.error(s"unknown unit expression in sigrec: $u"); csErr }
 
     object unitless:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[1]]] =
             import quotes.reflect.*
-            if (u =:= TypeRepr.of[1]) then Some('{ CanonicalSig.canonical1 }) else None 
+            if (u =:= TypeRepr.of[1]) then Some('{ CanonicalSig.canonical1 }) else None
 
     object baseunit:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Expr[CanonicalSig[?]]] =

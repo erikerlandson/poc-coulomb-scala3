@@ -67,7 +67,9 @@ object meta:
                         case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $bcoef } }
                     (ucan, bcoef, bsig)
                 else
-                    val ucoef = if (coefIs1(bcoef)) bcoef else '{ ${bcoef}.pow(Rational(${Expr(e.n)}, ${Expr(e.d)})) }
+                    val ucoef = if (coefIs1(bcoef)) bcoef
+                                else if (e.d == 1) '{ ${bcoef}.pow(${Expr(e.n.toInt)}) }
+                                else '{ ${bcoef}.pow(${Expr(e.n.toInt)}).root(${Expr(e.d.toInt)}) }
                     val usig = unifyPow(p, bsig)
                     val ucan = (u.asType, usig.asType) match
                         case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }

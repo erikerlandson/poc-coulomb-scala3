@@ -22,9 +22,9 @@ object meta:
             (Expr[CanonicalSig[?]], Expr[Rational], quotes.reflect.TypeRepr) =
         import quotes.reflect.*
         u match
-            case unitless(can) => (can, '{ Rational.const1 }, signil())
-            case baseunit(can) => (can, '{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
-            case derivedunit(can, coef, sig) => (can, coef, sig)
+            // traverse down the operator types first, since that can be done without
+            // any attempts to look up context variables for BaseUnit and DerivedUnit,
+            // which only happen at the leaves of expressions
             case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%*]) =>
                 val (_, lcoef, lsig) = sigrec(lu)
                 val (_, rcoef, rsig) = sigrec(ru)
@@ -62,6 +62,9 @@ object meta:
                     val ucan = (u.asType, usig.asType) match
                         case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
                     (ucan, ucoef, usig)
+            case unitless(can) => (can, '{ Rational.const1 }, signil())
+            case baseunit(can) => (can, '{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
+            case derivedunit(can, coef, sig) => (can, coef, sig)
             // we consider any other type for "promotion" to base-unit only if
             // it does not match the strict unit expression forms above, and
             // if the strict unit expression policy has not been enabled

@@ -11,6 +11,9 @@ object meta:
 
     def canonical[U](using Quotes, Type[U]): Expr[CanonicalSig[U]] =
         import quotes.reflect.*
+        // only the top-level CanonicalSig expression is actually instantiated. This is
+        // more efficient than the pure chained-given implementation, which must also
+        // instantiate all the intermediate forms.
         val (cs, _, _) = sigrec(TypeRepr.of[U])
         cs.asInstanceOf[Expr[CanonicalSig[U]]]
 
@@ -59,6 +62,9 @@ object meta:
                     val ucan = (u.asType, usig.asType) match
                         case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
                     (ucan, ucoef, usig)
+            // we consider any other type for "promotion" to base-unit only if
+            // it does not match the strict unit expression forms above, and
+            // if the strict unit expression policy has not been enabled
             case _ if (!strictunitexprs) =>
                 val ucoef = '{ Rational.const1 }
                 val usig = sigcons(u, Rational.const1, signil())

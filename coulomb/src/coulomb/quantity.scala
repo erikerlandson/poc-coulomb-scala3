@@ -125,6 +125,16 @@ object si:
         val abbv = "L"
         val coef = Rational(1, 1000)
 
+    trait Hertz
+    given DerivedUnit1[Hertz, 1 %/ Second] with
+        val name = "Hertz"
+        val abbv = "Hz"
+
+    trait Newton
+    given DerivedUnit1[Newton, Kilogram %* Meter %/ (Second %^ 2)] with
+        val name = "Newton"
+        val abbv = "N"
+
     trait Kilo
     given PrefixUnit[Kilo] with
         val name = "kilo"

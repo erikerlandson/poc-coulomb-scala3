@@ -14,11 +14,11 @@ object meta:
         // only the top-level CanonicalSig expression is actually instantiated. This is
         // more efficient than the pure chained-given implementation, which must also
         // instantiate all the intermediate forms.
-        val (cs, _, _) = sigrec(TypeRepr.of[U], top = true)
+        val (cs, _, _) = canrec(TypeRepr.of[U], top = true)
         cs.nn.asInstanceOf[Expr[CanonicalSig[U]]]
 
     // returns tuple: (expr-for-canonical, expr-for-coef, type-of-Res)
-    def sigrec(using Quotes)(u: quotes.reflect.TypeRepr, top: Boolean = false):
+    def canrec(using Quotes)(u: quotes.reflect.TypeRepr, top: Boolean = false):
             (Expr[CanonicalSig[?]] | Null, Expr[Rational], quotes.reflect.TypeRepr) =
         import quotes.reflect.*
         u match
@@ -26,23 +26,23 @@ object meta:
             // any attempts to look up context variables for BaseUnit and DerivedUnit,
             // which only happen at the leaves of expressions
             case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%*]) =>
-                val (_, lcoef, lsig) = sigrec(lu)
-                val (_, rcoef, rsig) = sigrec(ru)
+                val (_, lcoef, lsig) = canrec(lu)
+                val (_, rcoef, rsig) = canrec(ru)
                 val ucoef = if (coefIs1(lcoef)) rcoef else if (coefIs1(rcoef)) lcoef else '{ $lcoef * $rcoef }
                 val usig = unifyOp(lsig, rsig, _ + _)
                 val ucan = if (!top) null else (u.asType, usig.asType) match
                     case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
                 (ucan, ucoef, usig)
             case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%/]) =>
-                val (_, lcoef, lsig) = sigrec(lu)
-                val (_, rcoef, rsig) = sigrec(ru)
+                val (_, lcoef, lsig) = canrec(lu)
+                val (_, rcoef, rsig) = canrec(ru)
                 val ucoef = if (coefIs1(rcoef)) lcoef else '{ $lcoef / $rcoef }
                 val usig = unifyOp(lsig, rsig, _ - _)
                 val ucan = if (!top) null else (u.asType, usig.asType) match
                     case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
                 (ucan, ucoef, usig)
             case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[%^]) =>
-                val (_, bcoef, bsig) = sigrec(b)
+                val (_, bcoef, bsig) = canrec(b)
                 val ratexp(e) = p
                 if (e === Rational.const0)
                     val ucoef = '{ Rational.const1 }
@@ -82,7 +82,7 @@ object meta:
                 val ucan = if (!top) null else (u.asType, usig.asType) match
                     case ('[uT], '[sT]) => '{ new CanonicalSig[uT] { type Res = sT; val coef = $ucoef } }
                 (ucan, ucoef, usig)
-            case _ => { report.error(s"unknown unit expression in sigrec: $u"); csErr }
+            case _ => { report.error(s"unknown unit expression in canrec: $u"); csErr }
 
     def strictunitexprs(using Quotes): Boolean =
         import quotes.reflect.*
@@ -110,7 +110,7 @@ object meta:
             Implicits.search(TypeRepr.of[DerivedUnit1].appliedTo(List(u, TypeBounds.empty))) match
                 case iss: ImplicitSearchSuccess =>
                     val AppliedType(_, List(_, d)) = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit1].typeSymbol)
-                    val (_, dcoef, dsig) = sigrec(d)
+                    val (_, dcoef, dsig) = canrec(d)
                     // in the DerivedUnit1 special case, coef=1 by definition, so we can propagate dcoef directly
                     Some((dcoef, dsig))
                 case _ => None
@@ -121,7 +121,7 @@ object meta:
             Implicits.search(TypeRepr.of[DerivedUnit].appliedTo(List(u, TypeBounds.empty))) match
                 case iss: ImplicitSearchSuccess =>
                     val AppliedType(_, List(_, d)) = iss.tree.tpe.baseType(TypeRepr.of[DerivedUnit].typeSymbol)
-                    val (_, dcoef, dsig) = sigrec(d)
+                    val (_, dcoef, dsig) = canrec(d)
                     val du = iss.tree.asExpr.asInstanceOf[Expr[DerivedUnit[_, _]]]
                     val ucoef = if (coefIs1(dcoef)) '{ ${du}.coef } else '{ $dcoef * ${du}.coef }
                     Some((ucoef, dsig))

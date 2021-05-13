@@ -5,10 +5,13 @@ import coulomb.{ %*, %/, %^ }
 
 import coulomb.define.*
 
+import coulomb.Coefficient
+
 object meta:
     import scala.quoted.*
     import scala.language.implicitConversions
 
+    // Canonical[U] may not need an independent existence in new full-meta implementation
     def canonical[U](using Quotes, Type[U]): Expr[CanonicalSig[U]] =
         import quotes.reflect.*
         // only the top-level CanonicalSig expression is actually instantiated. This is
@@ -17,10 +20,31 @@ object meta:
         val (cs, _, _) = canrec(TypeRepr.of[U], top = true)
         cs.nn.asInstanceOf[Expr[CanonicalSig[U]]]
 
+    // Coefficient[U1, U2]
+    def coefficient[U1, U2](using Quotes, Type[U1], Type[U2]): Expr[Coefficient[U1, U2]] =
+        import quotes.reflect.*
+        val u1 = TypeRepr.of[U1]
+        val u2 = TypeRepr.of[U2]
+        if (u1 =:= u2) then
+            // confirm that the type has a defined canonical signature, or fail
+            val _ = canrec(u1)
+            // the coefficient between two identical unit expression types is always exactly 1
+            '{ new Coefficient[U1, U2] { val coef = Rational.const1 } }
+        // the fundamental theorem of algorithmic unit analysis:
+        // http://erikerlandson.github.io/blog/2019/05/03/algorithmic-unit-analysis/
+        val (_, rcoef, rsig) = canrec(TypeRepr.of[%/].appliedTo(List(u1, u2)))
+        if (rsig =:= signil()) then
+            '{ new Coefficient[U1, U2] { val coef = $rcoef } }
+        else
+            report.error(s"units are not convertable: ($u1) ($u2)")
+            '{ new Coefficient[U1, U2] { val coef = Rational.const0 } }
+
     // returns tuple: (expr-for-canonical, expr-for-coef, type-of-Res)
     def canrec(using Quotes)(u: quotes.reflect.TypeRepr, top: Boolean = false):
             (Expr[CanonicalSig[?]] | Null, Expr[Rational], quotes.reflect.TypeRepr) =
         import quotes.reflect.*
+        // if this encounters a unit type pattern it cannot expand to a canonical signature,
+        // at any level, it raises a compile-time error such that the context parameter search fails.
         u match
             // traverse down the operator types first, since that can be done without
             // any attempts to look up context variables for BaseUnit and DerivedUnit,

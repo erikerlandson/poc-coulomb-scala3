@@ -23,21 +23,22 @@ object meta:
     // Coefficient[U1, U2]
     def coefficient[U1, U2](using Quotes, Type[U1], Type[U2]): Expr[Coefficient[U1, U2]] =
         import quotes.reflect.*
-        val u1 = TypeRepr.of[U1]
-        val u2 = TypeRepr.of[U2]
+        val rcoef = coef(TypeRepr.of[U1], TypeRepr.of[U2])
+        '{ new Coefficient[U1, U2] { val coef = $rcoef } }
+
+    def coef(using Quotes)(u1: quotes.reflect.TypeRepr, u2: quotes.reflect.TypeRepr): Expr[Rational] =
+        import quotes.reflect.*
         if (u1 =:= u2) then
             // confirm that the type has a defined canonical signature, or fail
             val _ = canrec(u1)
             // the coefficient between two identical unit expression types is always exactly 1
-            '{ new Coefficient[U1, U2] { val coef = Rational.const1 } }
-        // the fundamental theorem of algorithmic unit analysis:
+            '{ Rational.const1 }
+        // the fundamental algorithmic unit analysis criterion:
         // http://erikerlandson.github.io/blog/2019/05/03/algorithmic-unit-analysis/
         val (_, rcoef, rsig) = canrec(TypeRepr.of[%/].appliedTo(List(u1, u2)))
-        if (rsig =:= signil()) then
-            '{ new Coefficient[U1, U2] { val coef = $rcoef } }
-        else
+        if (rsig =:= TypeRepr.of[SNil]) then rcoef else
             report.error(s"units are not convertable: ($u1) ($u2)")
-            '{ new Coefficient[U1, U2] { val coef = Rational.const0 } }
+            '{ Rational.const0 }
 
     // returns tuple: (expr-for-canonical, expr-for-coef, type-of-Res)
     def canrec(using Quotes)(u: quotes.reflect.TypeRepr, top: Boolean = false):

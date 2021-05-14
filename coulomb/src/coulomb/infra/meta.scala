@@ -55,8 +55,8 @@ object meta:
             case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[%^]) =>
                 val (bcoef, bsig) = cansig(b)
                 val ratexp(e) = p
-                if (e === Rational.const0) ('{ Rational.const1 }, signil())
-                else if (e === Rational.const1) (bcoef, bsig)
+                if (e == 0) ('{ Rational.const1 }, signil())
+                else if (e == 1) (bcoef, bsig)
                 else
                     val ucoef = if (coefIs1(bcoef)) bcoef
                                 else if (e.d == 1) '{ ${bcoef}.pow(${Expr(e.n.toInt)}) }
@@ -147,13 +147,13 @@ object meta:
             case signil() => sigcons(u, op(Rational(0), e), signil())
             case sigcons(u0, e0, tail) if (u =:= u0) => 
                 val ei = op(e0, e)
-                if (ei === 0) tail else sigcons(u, ei, tail)
+                if (ei == 0) tail else sigcons(u, ei, tail)
             case sigcons(u0, e0, tail) => sigcons(u0, e0, insertTerm(u, e, tail, op))
             case _ => { report.error(s"Unsupported type ${sig.show}"); TypeRepr.of[Nothing] }
 
     def unifyPow(using Quotes)(power: quotes.reflect.TypeRepr, sig: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
         val ratexp(e) = power
-        if (e === 0) signil() else unifyPowTerm(e, sig)
+        if (e == 0) signil() else unifyPowTerm(e, sig)
 
     def unifyPowTerm(using Quotes)(e: Rational, sig: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
         import quotes.reflect.*

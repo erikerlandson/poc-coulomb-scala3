@@ -1,6 +1,6 @@
 package coulomb.rational
 
-class Rational private (val n: BigInt, val d: BigInt) extends Serializable:
+final class Rational private (val n: BigInt, val d: BigInt) extends Serializable:
     import Rational.canonical
 
     override def toString: String =
@@ -57,8 +57,11 @@ class Rational private (val n: BigInt, val d: BigInt) extends Serializable:
     inline def toFloat: Float = toDouble.toFloat
     inline def toDouble: Double = n.toDouble / d.toDouble
 
-    inline def === (rhs: Rational): Boolean = (n == rhs.n) && (d == rhs.d)
-    inline def =/= (rhs: Rational): Boolean = !(this === rhs)
+    override def equals(rhs: Any): Boolean = rhs match
+        case v: Rational => (n == v.n) && (d == v.d)
+        case v: Int => (n == v) && (d == 1)
+        case v: Long => (n == v) && (d == 1)
+        case _ => false
 
     inline def < (rhs: Rational): Boolean = (n * rhs.d) < (rhs.n * d)
     inline def > (rhs: Rational): Boolean = rhs < this
@@ -115,4 +118,8 @@ object Rational:
         inline def apply(v: Float): Rational = Rational(v)
     given Conversion[Double, Rational] with
         inline def apply(v: Double): Rational = Rational(v)
+
+    given CanEqual[Rational, Rational] = CanEqual.derived
+    given CanEqual[Rational, Int] = CanEqual.derived
+    given CanEqual[Rational, Long] = CanEqual.derived
 end Rational

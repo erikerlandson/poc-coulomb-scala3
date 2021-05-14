@@ -9,6 +9,9 @@ trait %/[L, R]
 /** Represents raising unit expression B to integer power E */
 trait %^[B, E]
 
+/** type-level Rational */
+trait /%[N, D]
+
 @deprecated("Unitless should be replaced by integer literal type '1'")
 type Unitless = 1
 

@@ -1,7 +1,7 @@
 package coulomb.infra
 
-import coulomb.rational.{ Rational, /% }
-import coulomb.{ %*, %/, %^ }
+import coulomb.rational.{ Rational }
+import coulomb.{ %*, %/, %^, /% }
 
 import coulomb.define.*
 

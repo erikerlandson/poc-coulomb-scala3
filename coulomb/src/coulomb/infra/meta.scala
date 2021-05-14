@@ -1,8 +1,7 @@
 package coulomb.infra
 
-import coulomb.rational.{ Rational }
-import coulomb.{ %*, %/, %^, /% }
-
+import coulomb.rational.Rational
+import coulomb.*
 import coulomb.define.*
 
 import coulomb.Coefficient
@@ -129,21 +128,6 @@ object meta:
         Expr.summon[T] match
             case None => "None"
             case Some(e) => s"${e.show}   ${e.asTerm.show(using Printer.TreeStructure)}"
-
-    def unifyMulMeta[Sig1, Sig2](using Quotes, Type[Sig1], Type[Sig2]): Expr[UnifySigMul[Sig1, Sig2]] =
-        import quotes.reflect.*
-        unifyOp(TypeRepr.of[Sig1], TypeRepr.of[Sig2], _ + _).asType match
-            case '[resT] => '{ new UnifySigMul[Sig1, Sig2] { type Res = resT } }
-
-    def unifyDivMeta[Sig1, Sig2](using Quotes, Type[Sig1], Type[Sig2]): Expr[UnifySigDiv[Sig1, Sig2]] =
-        import quotes.reflect.*
-        unifyOp(TypeRepr.of[Sig1], TypeRepr.of[Sig2], _ - _).asType match
-            case '[resT] => '{ new UnifySigDiv[Sig1, Sig2] { type Res = resT } }
-
-    def unifyPowMeta[Power, Sig](using Quotes, Type[Power], Type[Sig]): Expr[UnifySigPow[Power, Sig]] =
-        import quotes.reflect.*
-        unifyPow(TypeRepr.of[Power], TypeRepr.of[Sig]).asType match
-            case '[resT] => '{ new UnifySigPow[Power, Sig] { type Res = resT } }
 
     def unifyOp(using Quotes)(
             sig1: quotes.reflect.TypeRepr, sig2: quotes.reflect.TypeRepr,

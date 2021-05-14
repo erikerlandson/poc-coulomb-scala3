@@ -12,6 +12,9 @@ trait %^[B, E]
 /** type-level Rational */
 trait /%[N, D]
 
+trait SNil
+trait %:[Head, Tail]
+
 @deprecated("Unitless should be replaced by integer literal type '1'")
 type Unitless = 1
 

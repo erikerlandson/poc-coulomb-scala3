@@ -18,6 +18,9 @@ trait %:[Head, Tail]
 @deprecated("Unitless should be replaced by integer literal type '1'")
 type Unitless = 1
 
+export quantity.Quantity as Quantity
+export quantity.withUnit as withUnit
+
 import scala.compiletime.{ summonInline, summonFrom }
 
 trait Addable[V]:
@@ -30,12 +33,24 @@ object Addable:
     given Addable[String] with
         inline def plus(x: String, y: String): String = x ++ y
 
-//trait Second
-import si.Second
+trait UnitAdd[V1, U1, V2, U2]:
+    type RV
+    type RU
+    def vadd(v1: V1, v2: V2): RV
+object UnitAdd:
+    transparent inline given UnitAdd[U1, U2](using coef: Coefficient[U2, U1]): UnitAdd[Double, U1, Double, U2] =
+        new UnitAdd[Double, U1, Double, U2]:
+            // just arbitrarily make return value type Float instead of Double
+            type RV = Float
+            type RU = U1
+            val c = coef.coef.toDouble
+            def vadd(v1: Double, v2: Double): Float = (v1 + (c * v2)).toFloat
 
-export quantity.Quantity as Quantity
-export quantity.withUnit as withUnit
+extension[V1, U1](ql: Quantity[V1, U1])
+    transparent inline def +[V2, U2](qr: Quantity[V2, U2])(using add: UnitAdd[V1, U1, V2, U2]): Quantity[add.RV, add.RU] =
+        add.vadd(ql.value, qr.value).withUnit[add.RU]
 
+/*
 extension[V, U] (ql: Quantity[V, U])
     inline def +(qr: Quantity[V, U]): Quantity[V, U] =
         (summonInline[Addable[V]]).plus(ql.value, qr.value).withUnit[U]
@@ -43,6 +58,7 @@ extension[V, U] (ql: Quantity[V, U])
 extension[U] (ql: Quantity[Int, U])
     inline def +(qr: Quantity[Int, U]): Quantity[Int, U] =
         (ql.value + qr.value).withUnit[U]
+*/
 
 object quantity:
     opaque type Quantity[V, U] = V
@@ -82,6 +98,8 @@ end qvec
 
 object test:
     import coulomb.*, coulomb.rational.*
+    import coulomb.si.*
+
 /*
     // using summonInline and summonFrom makes 'inline' keyword 'viral', if
     // defining functions having type parameters

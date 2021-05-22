@@ -74,6 +74,50 @@ object meta:
                 ('{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
             case _ => { report.error(s"unknown unit expression in cansig: $u"); csErr }
 
+    // returns tuple: (expr-for-coef, type-of-Res)
+    def stdsig(using Quotes)(u: quotes.reflect.TypeRepr, top: Boolean = false):
+            (Expr[Rational], quotes.reflect.TypeRepr) =
+        import quotes.reflect.*
+        // if this encounters a unit type pattern it cannot expand,
+        // at any level, it raises a compile-time error such that the context parameter search fails.
+        u match
+            // traverse down the operator types first, since that can be done without
+            // any attempts to look up context variables for BaseUnit and DerivedUnit,
+            // which only happen at the leaves of expressions
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%*]) =>
+                val (lcoef, lsig) = stdsig(lu)
+                val (rcoef, rsig) = stdsig(ru)
+                val ucoef = if (coefIs1(lcoef)) rcoef else if (coefIs1(rcoef)) lcoef else '{ $lcoef * $rcoef }
+                val usig = unifyOp(lsig, rsig, _ + _)
+                (ucoef, usig)
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%/]) =>
+                val (lcoef, lsig) = stdsig(lu)
+                val (rcoef, rsig) = stdsig(ru)
+                val ucoef = if (coefIs1(rcoef)) lcoef else '{ $lcoef / $rcoef }
+                val usig = unifyOp(lsig, rsig, _ - _)
+                (ucoef, usig)
+            case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[%^]) =>
+                val (bcoef, bsig) = stdsig(b)
+                val ratexp(e) = p
+                if (e == 0) ('{ Rational.const1 }, signil())
+                else if (e == 1) (bcoef, bsig)
+                else
+                    val ucoef = if (coefIs1(bcoef)) bcoef
+                                else if (e.d == 1) '{ ${bcoef}.pow(${Expr(e.n.toInt)}) }
+                                else '{ ${bcoef}.pow(${Expr(e.n.toInt)}).root(${Expr(e.d.toInt)}) }
+                    val usig = unifyPow(p, bsig)
+                    (ucoef, usig)
+            case unitless() => ('{ Rational.const1 }, signil())
+            case baseunit() => ('{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
+            case derivedunit1(_, _) => ('{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
+            case derivedunit(_, _) => ('{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
+            case _ if (!strictunitexprs) =>
+                // we consider any other type for "promotion" to base-unit only if
+                // it does not match the strict unit expression forms above, and
+                // if the strict unit expression policy has not been enabled
+                ('{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
+            case _ => { report.error(s"unknown unit expression in stdsig: $u"); csErr }
+
     def strictunitexprs(using Quotes): Boolean =
         import quotes.reflect.*
         Implicits.search(TypeRepr.of[coulomb.policy.StrictUnitExpressions]) match

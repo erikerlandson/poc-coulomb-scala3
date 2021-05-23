@@ -60,6 +60,13 @@ extension[U] (ql: Quantity[Int, U])
         (ql.value + qr.value).withUnit[U]
 */
 
+object conversion:
+    inline given [U1, U2](using conv: Coefficient[U1, U2]): scala.Conversion[Quantity[Double, U1], Quantity[Double, U2]] =
+        new scala.Conversion[Quantity[Double, U1], Quantity[Double, U2]]:
+            val c = conv.coef.toDouble
+            def apply(q: Quantity[Double, U1]): Quantity[Double, U2] =
+                (q.value * c).withUnit[U2]
+
 object quantity:
     opaque type Quantity[V, U] = V
 

@@ -109,7 +109,7 @@ object meta:
             case signil() => (signil(), signil())
             case sigcons(u, p, tail) =>
                 val (nsig, dsig) = sortsig(tail)
-                if (p > 0) (sigcons(u, p, nsig), dsig) else (nsig, sigcons(u, p, dsig))
+                if (p > 0) (sigcons(u, p, nsig), dsig) else (nsig, sigcons(u, -p, dsig))
             case _ => { report.error(s"unknown unit expression in stdsig: $sig"); (signil(), signil()) }
 
     def strictunitexprs(using Quotes): Boolean =

@@ -102,6 +102,16 @@ object meta:
                 sigcons(u, Rational.const1, signil())
             case _ => { report.error(s"unknown unit expression in stdsig: $u"); signil() }
 
+    def sortsig(using Quotes)(sig: quotes.reflect.TypeRepr):
+            (quotes.reflect.TypeRepr, quotes.reflect.TypeRepr) =
+        import quotes.reflect.*
+        sig match
+            case signil() => (signil(), signil())
+            case sigcons(u, p, tail) =>
+                val (nsig, dsig) = sortsig(tail)
+                if (p > 0) (sigcons(u, p, nsig), dsig) else (nsig, sigcons(u, p, dsig))
+            case _ => { report.error(s"unknown unit expression in stdsig: $sig"); (signil(), signil()) }
+
     def strictunitexprs(using Quotes): Boolean =
         import quotes.reflect.*
         Implicits.search(TypeRepr.of[coulomb.policy.StrictUnitExpressions]) match

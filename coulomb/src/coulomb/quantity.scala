@@ -61,7 +61,14 @@ extension[U] (ql: Quantity[Int, U])
 */
 
 object conversion:
-    inline given [U1, U2](using conv: Coefficient[U1, U2]): scala.Conversion[Quantity[Double, U1], Quantity[Double, U2]] =
+    inline given convValValUnit[V1, V2, U](using cv: scala.Conversion[V1, V2]):
+            scala.Conversion[Quantity[V1, U], Quantity[V2, U]] =
+        new scala.Conversion[Quantity[V1, U], Quantity[V2, U]]:
+            def apply(q: Quantity[V1, U]): Quantity[V2, U] =
+                (cv(q.value)).withUnit[U]
+
+    inline given convDoubleUnitUnit[U1, U2](using conv: Coefficient[U1, U2]):
+            scala.Conversion[Quantity[Double, U1], Quantity[Double, U2]] =
         new scala.Conversion[Quantity[Double, U1], Quantity[Double, U2]]:
             val c = conv.coef.toDouble
             def apply(q: Quantity[Double, U1]): Quantity[Double, U2] =

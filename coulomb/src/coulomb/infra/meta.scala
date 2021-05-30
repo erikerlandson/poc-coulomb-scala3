@@ -112,6 +112,50 @@ object meta:
                 if (p > 0) (sigcons(u, p, nsig), dsig) else (nsig, sigcons(u, -p, dsig))
             case _ => { report.error(s"unknown unit expression in stdsig: $sig"); (signil(), signil()) }
 
+    def mulRU[UL, UR](using Quotes, Type[UL], Type[UR]): Expr[MulRU[UL, UR]] =
+        import quotes.reflect.*
+        val t = unifyOp(stdsig(TypeRepr.of[UL]), stdsig(TypeRepr.of[UR]), _ + _)
+        val (un, ud) = sortsig(t)
+        finRU(un, ud).asType match
+            case '[ru] => '{ new MulRU[UL, UR] { type RU = ru } }
+
+    def divRU[UL, UR](using Quotes, Type[UL], Type[UR]): Expr[DivRU[UL, UR]] =
+        import quotes.reflect.*
+        val t = unifyOp(stdsig(TypeRepr.of[UL]), stdsig(TypeRepr.of[UR]), _ - _)
+        val (un, ud) = sortsig(t)
+        finRU(un, ud).asType match
+            case '[ru] => '{ new DivRU[UL, UR] { type RU = ru } }
+
+    def powRU[U, P](using Quotes, Type[U], Type[P]): Expr[PowRU[U, P]] =
+        import quotes.reflect.*
+        val t = unifyPow(TypeRepr.of[P], stdsig(TypeRepr.of[U]))
+        val (un, ud) = sortsig(t)
+        finRU(un, ud).asType match
+            case '[ru] => '{ new PowRU[U, P] { type RU = ru } }
+
+    def finRU(using Quotes)(un: quotes.reflect.TypeRepr, ud: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+        import quotes.reflect.*
+        (uProd(un), uProd(ud)) match
+            case (unitless(), unitless()) => TypeRepr.of[1]
+            case (n, unitless()) => n
+            case (unitless(), d) => TypeRepr.of[%/].appliedTo(List(TypeRepr.of[1], d))
+            case (n, d) => TypeRepr.of[%/].appliedTo(List(n, d))
+
+    def uProd(using Quotes)(u: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+        import quotes.reflect.*
+        u match
+            case signil() => TypeRepr.of[1]
+            case sigcons(u, p, signil()) => uTerm(u, p)
+            case sigcons(u1, p1, sigcons(u2, p2, signil())) =>
+                TypeRepr.of[%*].appliedTo(List(uTerm(u1, p1), uTerm(u2, p2)))
+            case sigcons(u, p, tail) =>
+                TypeRepr.of[%*].appliedTo(List(uTerm(u, p), uProd(tail)))
+            case _ => { report.error(s"unknown unit expression in uProd: $u"); TypeRepr.of[Nothing] }
+
+    def uTerm(using Quotes)(u: quotes.reflect.TypeRepr, p: Rational): quotes.reflect.TypeRepr =
+        import quotes.reflect.*
+        if (p == 1) u else TypeRepr.of[%^].appliedTo(List(u, ratexp(p)))
+
     def strictunitexprs(using Quotes): Boolean =
         import quotes.reflect.*
         Implicits.search(TypeRepr.of[coulomb.policy.StrictUnitExpressions]) match

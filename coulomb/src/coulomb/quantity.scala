@@ -18,62 +18,6 @@ trait %:[Head, Tail]
 @deprecated("Unitless should be replaced by integer literal type '1'")
 type Unitless = 1
 
-export quantity.Quantity as Quantity
-export quantity.withUnit as withUnit
-
-import scala.compiletime.{ summonInline, summonFrom }
-
-trait Addable[V]:
-    def plus(x: V, y: V): V
-object Addable:
-    given Addable[Int] with
-        inline def plus(x: Int, y: Int): Int = x + y
-    given Addable[Double] with
-        inline def plus(x: Double, y: Double): Double = x + y
-    given Addable[String] with
-        inline def plus(x: String, y: String): String = x ++ y
-
-trait UnitAdd[V1, U1, V2, U2]:
-    type RV
-    type RU
-    def vadd(v1: V1, v2: V2): RV
-object UnitAdd:
-    transparent inline given UnitAdd[U1, U2](using coef: Coefficient[U2, U1]): UnitAdd[Double, U1, Double, U2] =
-        new UnitAdd[Double, U1, Double, U2]:
-            // just arbitrarily make return value type Float instead of Double
-            type RV = Float
-            type RU = U1
-            val c = coef.coef.toDouble
-            def vadd(v1: Double, v2: Double): Float = (v1 + (c * v2)).toFloat
-
-extension[V1, U1](ql: Quantity[V1, U1])
-    transparent inline def +[V2, U2](qr: Quantity[V2, U2])(using add: UnitAdd[V1, U1, V2, U2]): Quantity[add.RV, add.RU] =
-        add.vadd(ql.value, qr.value).withUnit[add.RU]
-
-/*
-extension[V, U] (ql: Quantity[V, U])
-    inline def +(qr: Quantity[V, U]): Quantity[V, U] =
-        (summonInline[Addable[V]]).plus(ql.value, qr.value).withUnit[U]
-
-extension[U] (ql: Quantity[Int, U])
-    inline def +(qr: Quantity[Int, U]): Quantity[Int, U] =
-        (ql.value + qr.value).withUnit[U]
-*/
-
-object conversion:
-    inline given convValValUnit[V1, V2, U](using cv: scala.Conversion[V1, V2]):
-            scala.Conversion[Quantity[V1, U], Quantity[V2, U]] =
-        new scala.Conversion[Quantity[V1, U], Quantity[V2, U]]:
-            def apply(q: Quantity[V1, U]): Quantity[V2, U] =
-                (cv(q.value)).withUnit[U]
-
-    inline given convDoubleUnitUnit[U1, U2](using conv: Coefficient[U1, U2]):
-            scala.Conversion[Quantity[Double, U1], Quantity[Double, U2]] =
-        new scala.Conversion[Quantity[Double, U1], Quantity[Double, U2]]:
-            val c = conv.coef.toDouble
-            def apply(q: Quantity[Double, U1]): Quantity[Double, U2] =
-                (q.value * c).withUnit[U2]
-
 object quantity:
     opaque type Quantity[V, U] = V
 
@@ -90,6 +34,8 @@ object quantity:
     object Quantity:
         def apply[U](using a: Applier[U]) = a
         def apply[U](v: Int): Quantity[Int, U] = v
+        def apply[U](v: Long): Quantity[Long, U] = v
+        def apply[U](v: Float): Quantity[Float, U] = v
         def apply[U](v: Double): Quantity[Double, U] = v
     end Quantity
 
@@ -98,45 +44,34 @@ object quantity:
         def value: V = ql
     extension[U](ql: Quantity[Int, U])
         def value: Int = ql
+    extension[U](ql: Quantity[Long, U])
+        def value: Long = ql
+    extension[U](ql: Quantity[Float, U])
+        def value: Float = ql
+    extension[U](ql: Quantity[Double, U])
+        def value: Double = ql
 
     extension[V](v: V)
         def withUnit[U]: Quantity[V, U] = v
     extension(v: Int)
         def withUnit[U]: Quantity[Int, U] = v
+    extension(v: Long)
+        def withUnit[U]: Quantity[Long, U] = v
+    extension(v: Float)
+        def withUnit[U]: Quantity[Float, U] = v
+    extension(v: Double)
+        def withUnit[U]: Quantity[Double, U] = v
 
 end quantity
 
-object qvec:
-    opaque type QVec[V, U] = Vector[V]
-end qvec
+export quantity.Quantity as Quantity
+export quantity.withUnit as withUnit
 
-object test:
-    import coulomb.*, coulomb.rational.*
-    import coulomb.si.*
+import coulomb.unitops.*
 
-/*
-    // using summonInline and summonFrom makes 'inline' keyword 'viral', if
-    // defining functions having type parameters
-    inline def addTest[V, U](q1: Quantity[V, U], q2: Quantity[V, U]): Quantity[V, U] =
-        q1 + q2
-
-    val lhs = 3.withUnit[Second]
-    val rhs = 5.withUnit[Second]
-    val zzz = lhs + rhs
-
-    val zv = zzz.value
-
-    val www = addTest(lhs, rhs)
-
-
-    val t = 4.withUnit[Second]
-*/
-    val t1 = Quantity[Second](99)
-    val t2 = Quantity[Second](99.9)
-    val t3 = Quantity[Second]("foo")
-
-    //val r: Rational = 1
-end test
+extension[VL, UL](ql: Quantity[VL, UL])
+    transparent inline def +[VR, UR](qr: Quantity[VR, UR])(using add: UnitAdd[VL, UL, VR, UR]): Quantity[add.VO, add.UO] =
+        add(ql.value, qr.value).withUnit[add.UO]
 
 object si:
     import coulomb.rational.Rational

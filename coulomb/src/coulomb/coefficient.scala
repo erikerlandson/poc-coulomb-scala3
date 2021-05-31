@@ -10,4 +10,4 @@ trait Coefficient[U1, U2]:
     override def toString = s"Coefficient($coef)"
 
 object Coefficient:
-    transparent inline given [U1, U2]: Coefficient[U1, U2] = ${ coulomb.infra.meta.coefficient[U1, U2] }
+    inline given [U1, U2]: Coefficient[U1, U2] = ${ coulomb.infra.meta.coefficient[U1, U2] }

@@ -28,7 +28,7 @@ object meta:
             '{ Rational.const1 }
         // the fundamental algorithmic unit analysis criterion:
         // http://erikerlandson.github.io/blog/2019/05/03/algorithmic-unit-analysis/
-        val (rcoef, rsig) = cansig(TypeRepr.of[%/].appliedTo(List(u1, u2)))
+        val (rcoef, rsig) = cansig(TypeRepr.of[/].appliedTo(List(u1, u2)))
         if (rsig =:= TypeRepr.of[SNil]) then rcoef else
             report.error(s"units are not convertable: ($u1) ($u2)")
             '{ Rational.const0 }
@@ -43,19 +43,19 @@ object meta:
             // traverse down the operator types first, since that can be done without
             // any attempts to look up context variables for BaseUnit and DerivedUnit,
             // which only happen at the leaves of expressions
-            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%*]) =>
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[*]) =>
                 val (lcoef, lsig) = cansig(lu)
                 val (rcoef, rsig) = cansig(ru)
                 val ucoef = if (coefIs1(lcoef)) rcoef else if (coefIs1(rcoef)) lcoef else '{ $lcoef * $rcoef }
                 val usig = unifyOp(lsig, rsig, _ + _)
                 (ucoef, usig)
-            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%/]) =>
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[/]) =>
                 val (lcoef, lsig) = cansig(lu)
                 val (rcoef, rsig) = cansig(ru)
                 val ucoef = if (coefIs1(rcoef)) lcoef else '{ $lcoef / $rcoef }
                 val usig = unifyOp(lsig, rsig, _ - _)
                 (ucoef, usig)
-            case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[%^]) =>
+            case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[^]) =>
                 val (bcoef, bsig) = cansig(b)
                 val ratexp(e) = p
                 if (e == 0) ('{ Rational.const1 }, signil())
@@ -85,11 +85,11 @@ object meta:
             // traverse down the operator types first, since that can be done without
             // any attempts to look up context variables for BaseUnit and DerivedUnit,
             // which only happen at the leaves of expressions
-            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%*]) =>
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[*]) =>
                 unifyOp(stdsig(lu), stdsig(ru), _ + _)
-            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[%/]) =>
+            case AppliedType(op, List(lu, ru)) if (op =:= TypeRepr.of[/]) =>
                 unifyOp(stdsig(lu), stdsig(ru), _ - _)
-            case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[%^]) =>
+            case AppliedType(op, List(b, p)) if (op =:= TypeRepr.of[^]) =>
                 val ratexp(e) = p
                 if (e == 0) signil()
                 else if (e == 1) stdsig(b)
@@ -141,8 +141,8 @@ object meta:
         (uProd(un), uProd(ud)) match
             case (unitless(), unitless()) => TypeRepr.of[1]
             case (n, unitless()) => n
-            case (unitless(), d) => TypeRepr.of[%/].appliedTo(List(TypeRepr.of[1], d))
-            case (n, d) => TypeRepr.of[%/].appliedTo(List(n, d))
+            case (unitless(), d) => TypeRepr.of[/].appliedTo(List(TypeRepr.of[1], d))
+            case (n, d) => TypeRepr.of[/].appliedTo(List(n, d))
 
     def uProd(using Quotes)(u: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
         import quotes.reflect.*
@@ -150,14 +150,14 @@ object meta:
             case signil() => TypeRepr.of[1]
             case sigcons(u, p, signil()) => uTerm(u, p)
             case sigcons(u1, p1, sigcons(u2, p2, signil())) =>
-                TypeRepr.of[%*].appliedTo(List(uTerm(u1, p1), uTerm(u2, p2)))
+                TypeRepr.of[*].appliedTo(List(uTerm(u1, p1), uTerm(u2, p2)))
             case sigcons(u, p, tail) =>
-                TypeRepr.of[%*].appliedTo(List(uTerm(u, p), uProd(tail)))
+                TypeRepr.of[*].appliedTo(List(uTerm(u, p), uProd(tail)))
             case _ => { report.error(s"unknown unit expression in uProd: $u"); TypeRepr.of[Nothing] }
 
     def uTerm(using Quotes)(u: quotes.reflect.TypeRepr, p: Rational): quotes.reflect.TypeRepr =
         import quotes.reflect.*
-        if (p == 1) u else TypeRepr.of[%^].appliedTo(List(u, ratexp(p)))
+        if (p == 1) u else TypeRepr.of[^].appliedTo(List(u, ratexp(p)))
 
     def strictunitexprs(using Quotes): Boolean =
         import quotes.reflect.*
@@ -282,7 +282,7 @@ object meta:
             if (e.d == 1) then
                 ConstantType(IntConstant(e.n.toInt))
             else
-                TypeRepr.of[/%].appliedTo(List(ConstantType(IntConstant(e.n.toInt)), ConstantType(IntConstant(e.d.toInt))))
+                TypeRepr.of[/].appliedTo(List(ConstantType(IntConstant(e.n.toInt)), ConstantType(IntConstant(e.d.toInt))))
 
         def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Rational] =
             import quotes.reflect.*
@@ -295,7 +295,7 @@ object meta:
         def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[(Int, Int)] =
              import quotes.reflect.*
              tr match
-                case AppliedType(tc, List(ConstantType(IntConstant(n)), ConstantType(IntConstant(d)))) if (tc =:= TypeRepr.of[/%]) =>
+                case AppliedType(tc, List(ConstantType(IntConstant(n)), ConstantType(IntConstant(d)))) if (tc =:= TypeRepr.of[/]) =>
                     Some((n, d))
                 case _ => None
 

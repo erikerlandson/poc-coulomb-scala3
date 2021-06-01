@@ -1,16 +1,13 @@
 package coulomb
 
 /** Represents the product of two unit expressions L and R */
-trait %*[L, R]
+trait *[L, R]
 
 /** Represents the unit division L / R */
-trait %/[L, R]
+trait /[L, R]
 
 /** Represents raising unit expression B to integer power E */
-trait %^[B, E]
-
-/** type-level Rational */
-trait /%[N, D]
+trait ^[B, E]
 
 @deprecated("Unitless should be replaced by integer literal type '1'")
 type Unitless = 1
@@ -90,18 +87,18 @@ object si:
         val abbv = "s"
 
     trait Liter
-    given DerivedUnit[Liter, Meter %* Meter %* Meter] with
+    given DerivedUnit[Liter, Meter * Meter * Meter] with
         val name = "liter"
         val abbv = "L"
         val coef = Rational(1, 1000)
 
     trait Hertz
-    given DerivedUnit1[Hertz, 1 %/ Second] with
+    given DerivedUnit1[Hertz, 1 / Second] with
         val name = "Hertz"
         val abbv = "Hz"
 
     trait Newton
-    given DerivedUnit1[Newton, Kilogram %* Meter %/ (Second %^ 2)] with
+    given DerivedUnit1[Newton, Kilogram * Meter / (Second ^ 2)] with
         val name = "Newton"
         val abbv = "N"
 

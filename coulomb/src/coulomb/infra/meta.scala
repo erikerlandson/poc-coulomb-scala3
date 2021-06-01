@@ -6,6 +6,9 @@ import coulomb.define.*
 
 import coulomb.Coefficient
 
+trait SNil
+trait %:[Head, Tail]
+
 object meta:
     import scala.quoted.*
     import scala.language.implicitConversions

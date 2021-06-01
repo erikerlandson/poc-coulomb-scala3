@@ -12,11 +12,11 @@ trait %^[B, E]
 /** type-level Rational */
 trait /%[N, D]
 
-trait SNil
-trait %:[Head, Tail]
-
 @deprecated("Unitless should be replaced by integer literal type '1'")
 type Unitless = 1
+
+export quantity.Quantity as Quantity
+export quantity.withUnit as withUnit
 
 object quantity:
     opaque type Quantity[V, U] = V
@@ -63,9 +63,6 @@ object quantity:
         def withUnit[U]: Quantity[Double, U] = v
 
 end quantity
-
-export quantity.Quantity as Quantity
-export quantity.withUnit as withUnit
 
 import coulomb.unitops.*
 

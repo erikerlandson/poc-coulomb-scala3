@@ -62,10 +62,20 @@ object quantity:
 end quantity
 
 import coulomb.ops.*
+import scala.annotation.implicitNotFound
 
 extension[VL, UL](ql: Quantity[VL, UL])
     transparent inline def +[VR, UR](qr: Quantity[VR, UR])(using add: Add[VL, UL, VR, UR]): Quantity[add.VO, add.UO] =
         add(ql.value, qr.value).withUnit[add.UO]
+
+@implicitNotFound("Units are not commensurate: no coefficient of conversion exists for unit types (${U1}) and (${U2})")
+abstract class Coefficient[U1, U2]:
+    val coef: coulomb.rational.Rational
+    override def toString = s"Coefficient($coef)"
+
+object Coefficient:
+    inline given [U1, U2]: Coefficient[U1, U2] =
+        ${ coulomb.infra.meta.coefficient[U1, U2] }
 
 object si:
     import coulomb.rational.Rational

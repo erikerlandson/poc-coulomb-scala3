@@ -87,7 +87,7 @@ object si:
         val abbv = "s"
 
     final type Liter
-    given DerivedUnit[Liter, Meter * Meter * Meter] with
+    given DerivedUnit[Liter, Meter ^ 3] with
         val name = "liter"
         val abbv = "L"
         val coef = Rational(1, 1000)

@@ -6,8 +6,8 @@ import coulomb.define.*
 
 import coulomb.Coefficient
 
-trait SNil
-trait %:[Head, Tail]
+final type SNil
+final type %:[Head, Tail]
 
 object meta:
     import scala.quoted.*

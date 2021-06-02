@@ -1,16 +1,16 @@
 package coulomb
 
 /** Represents the product of two unit expressions L and R */
-trait *[L, R]
+final type *[L, R]
 
 /** Represents the unit division L / R */
-trait /[L, R]
+final type /[L, R]
 
 /** Represents raising unit expression B to integer power E */
-trait ^[B, E]
+final type ^[B, E]
 
 @deprecated("Unitless should be replaced by integer literal type '1'")
-type Unitless = 1
+final type Unitless = 1
 
 export quantity.Quantity as Quantity
 export quantity.withUnit as withUnit
@@ -22,7 +22,7 @@ object quantity:
     // are a way to lift raw values into a Quantity
     // and a way to extract raw values from a quantity
 
-    trait Applier[U]:
+    abstract class Applier[U]:
         def apply[V](v: V): Quantity[V, U]
     object Applier:
         given [U]: Applier[U] = new Applier[U] { def apply[V](v: V): Quantity[V, U] = v } 
@@ -61,54 +61,54 @@ object quantity:
 
 end quantity
 
-import coulomb.unitops.*
+import coulomb.ops.*
 
 extension[VL, UL](ql: Quantity[VL, UL])
-    transparent inline def +[VR, UR](qr: Quantity[VR, UR])(using add: UnitAdd[VL, UL, VR, UR]): Quantity[add.VO, add.UO] =
+    transparent inline def +[VR, UR](qr: Quantity[VR, UR])(using add: Add[VL, UL, VR, UR]): Quantity[add.VO, add.UO] =
         add(ql.value, qr.value).withUnit[add.UO]
 
 object si:
     import coulomb.rational.Rational
     import coulomb.define.*
 
-    trait Meter
+    final type Meter
     given BaseUnit[Meter] with
         val name = "meter"
         val abbv = "m"
 
-    trait Kilogram
+    final type Kilogram
     given BaseUnit[Kilogram] with
         val name = "kilogram"
         val abbv = "kg"
 
-    trait Second
+    final type Second
     given BaseUnit[Second] with
         val name = "second"
         val abbv = "s"
 
-    trait Liter
+    final type Liter
     given DerivedUnit[Liter, Meter * Meter * Meter] with
         val name = "liter"
         val abbv = "L"
         val coef = Rational(1, 1000)
 
-    trait Hertz
+    final type Hertz
     given DerivedUnit1[Hertz, 1 / Second] with
         val name = "Hertz"
         val abbv = "Hz"
 
-    trait Newton
+    final type Newton
     given DerivedUnit1[Newton, Kilogram * Meter / (Second ^ 2)] with
         val name = "Newton"
         val abbv = "N"
 
-    trait Kilo
+    final type Kilo
     given PrefixUnit[Kilo] with
         val name = "kilo"
         val abbv = "k"
         val coef = Rational(1000)
 
-    trait Yard
+    final type Yard
     given yard: DerivedUnit[Yard, Meter] with
         val name = "yard"
         val abbv = "yd"

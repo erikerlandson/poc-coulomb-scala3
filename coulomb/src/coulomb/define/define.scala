@@ -5,7 +5,7 @@ import scala.language.implicitConversions
 import coulomb.rational.Rational
 
 /** Methods and values common to all unit and temperature definitions */
-trait UnitDefinition:
+abstract class UnitDefinition:
     /** the full name of a unit, e.g. "meter" */
     val name: String
     /** the abbreviation of a unit, e.g. "m" for "meter" */

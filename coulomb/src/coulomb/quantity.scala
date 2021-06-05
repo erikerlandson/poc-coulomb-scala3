@@ -70,8 +70,8 @@ extension[VL, UL](ql: Quantity[VL, UL])
 
 @implicitNotFound("No coefficient of conversion exists for unit types (${U1}) and (${U2})")
 abstract class Coefficient[U1, U2]:
-    val coef: coulomb.rational.Rational
-    override def toString = s"Coefficient($coef)"
+    val value: coulomb.rational.Rational
+    override def toString = s"Coefficient($value)"
 
 object Coefficient:
     transparent inline given [U1, U2]: Coefficient[U1, U2] =

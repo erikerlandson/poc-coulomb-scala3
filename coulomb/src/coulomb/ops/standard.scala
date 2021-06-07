@@ -3,6 +3,10 @@ package coulomb.ops.standard
 import coulomb.*
 import coulomb.ops.*
 
+transparent inline given addStandard[VL, UL, VR, UR]: Add[VL, UL, VR, UR] =
+    ${ coulomb.infra.meta.addStandard[VL, UL, VR, UR] }
+
+/*
 transparent inline given addxUCxDD[U]: Add[Double, U, Double, U] =
     new Add[Double, U, Double, U]:
         type VO = Double
@@ -76,3 +80,4 @@ transparent inline given g3[UL, UR](using coef: Coefficient[UR, UL]): Add[Int, U
         type UO = UL
         val c = coef.value.toDouble
         def apply(vl: Int, vr: Double): Double = vl + (c * vr)
+*/

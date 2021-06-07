@@ -14,36 +14,6 @@ object meta:
     import scala.quoted.*
     import scala.language.implicitConversions
 
-    def addStandard[VL :Type, UL :Type, VR :Type, UR :Type](using Quotes): Expr[Add[VL, UL, VR, UR]] =
-        import quotes.reflect.*
-        val (uL, uR) = (TypeRepr.of[UL], TypeRepr.of[UR])
-        if (uL =:= uR) then
-            // units are the same, so no coefficient is necessary
-            (TypeRepr.of[VL], TypeRepr.of[VR]) match
-                case (typeDouble(), typeDouble()) => '{
-                    new Add[VL, UL, VR, UR]:
-                        type VO = Double
-                        type UO = UL
-                        def apply(vl: Double, vr: Double): Double = vl + vr
-                }
-                case _ =>
-                    report.error(s"addition not defined for these types")
-                    '{ new Add[VL, UL, VR, UR] { type VO = Int; type UO = Nothing; def apply(vl: VL, vr: VR): VO = 0 } }
-        else
-            // units are not identical: get coefficient (or fail)
-            val cf = coef(uR, uL) // get coefficient from right to left
-            (TypeRepr.of[VL], TypeRepr.of[VR]) match
-                case (typeDouble(), typeDouble()) => '{
-                    new Add[VL, UL, VR, UR]:
-                        type VO = Double
-                        type UO = UL
-                        val c = ${cf}.toDouble
-                        def apply(vl: Double, vr: Double): Double = vl + (c * vr)
-                }
-                case _ =>
-                    report.error(s"addition not defined for these types")
-                    '{ new Add[VL, UL, VR, UR] { type VO = Int; type UO = Nothing; def apply(vl: VL, vr: VR): VO = 0 } }
-
     // Coefficient[U1, U2]
     def coefficient[U1, U2](using Quotes, Type[U1], Type[U2]): Expr[Coefficient[U1, U2]] =
         import quotes.reflect.*

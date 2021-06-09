@@ -68,6 +68,13 @@ extension[VL, UL](ql: Quantity[VL, UL])
     transparent inline def +[VR, UR](qr: Quantity[VR, UR])(using add: Add[VL, UL, VR, UR]): Quantity[add.VO, add.UO] =
         add(ql.value, qr.value).withUnit[add.UO]
 
+    transparent inline def to[V, U](using
+        conv: scala.Conversion[Quantity[VL, UL], Quantity[V, U]]): Quantity[V, U] = conv(ql)
+    transparent inline def toValue[V](using
+        conv: scala.Conversion[Quantity[VL, UL], Quantity[V, UL]]): Quantity[V, UL] = conv(ql)
+    transparent inline def toUnit[U](using
+        conv: scala.Conversion[Quantity[VL, UL], Quantity[VL, U]]): Quantity[VL, U] = conv(ql)
+
 @implicitNotFound("No coefficient of conversion exists for unit types (${U1}) and (${U2})")
 abstract class Coefficient[U1, U2]:
     val value: coulomb.rational.Rational

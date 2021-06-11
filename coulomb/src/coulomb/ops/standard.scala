@@ -10,6 +10,9 @@ transparent inline given addStandard[VL, UL, VR, UR]: Add[VL, UL, VR, UR] =
 transparent inline given showStandard[U]: Show[U] =
     ${ meta.showStandard[U] }
 
+transparent inline given showFullStandard[U]: ShowFull[U] =
+    ${ meta.showFullStandard[U] }
+
 object meta:
     import scala.quoted.*
     import coulomb.infra.meta.*
@@ -18,6 +21,11 @@ object meta:
         import quotes.reflect.*
         val usexpr = showrender(TypeRepr.of[U], (nu: Expr[NamedUnit]) => '{ ${nu}.abbv })
         '{ new Show[U] { val value = $usexpr } }
+
+    def showFullStandard[U](using Quotes, Type[U]): Expr[ShowFull[U]] =
+        import quotes.reflect.*
+        val usexpr = showrender(TypeRepr.of[U], (nu: Expr[NamedUnit]) => '{ ${nu}.name })
+        '{ new ShowFull[U] { val value = $usexpr } }
 
     def showrender(using Quotes)(u: quotes.reflect.TypeRepr, render: Expr[NamedUnit] => Expr[String]): Expr[String] =
         import quotes.reflect.*
@@ -81,7 +89,6 @@ object meta:
         val str = showrender(u, render)
         if (atomic(u)) str else '{ "(" + ${str} + ")" }
 
-    // fill this in later
     def atomic(using Quotes)(u: quotes.reflect.TypeRepr): Boolean =
         import quotes.reflect.*
         u match

@@ -322,3 +322,15 @@ object meta:
     object typeLong:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Boolean =
             u =:= quotes.reflect.TypeRepr.of[Long]
+
+    def typestr(using Quotes)(t: quotes.reflect.TypeRepr): Expr[String] =
+        import quotes.reflect.*
+        def work(tr: TypeRepr): String = tr match
+            case AppliedType(tc, ta) =>
+                val tcn = tc.typeSymbol.name
+                val as = ta.map(work)
+                if (as.length == 0) tcn else
+                    tcn + "[" + as.mkString(",") + "]"
+            case t => t.typeSymbol.name
+        val ts = work(t.dealias)
+        Expr(ts)

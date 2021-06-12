@@ -65,6 +65,9 @@ import coulomb.ops.*
 import scala.annotation.implicitNotFound
 
 extension[VL, UL](ql: Quantity[VL, UL])
+    transparent inline def show(using sh: Show[UL]): String = s"${ql.value.toString} ${sh.value}"
+    transparent inline def showFull(using sh: ShowFull[UL]): String = s"${ql.value.toString} ${sh.value}"
+
     transparent inline def +[VR, UR](qr: Quantity[VR, UR])(using add: Add[VL, UL, VR, UR]): Quantity[add.VO, add.UO] =
         add(ql.value, qr.value).withUnit[add.UO]
 
@@ -74,6 +77,9 @@ extension[VL, UL](ql: Quantity[VL, UL])
         conv: scala.Conversion[Quantity[VL, UL], Quantity[V, UL]]): Quantity[V, UL] = conv(ql)
     transparent inline def toUnit[U](using
         conv: scala.Conversion[Quantity[VL, UL], Quantity[VL, U]]): Quantity[VL, U] = conv(ql)
+
+def showUnit[U](using sh: Show[U]): String = sh.value
+def showUnitFull[U](using sh: ShowFull[U]): String = sh.value
 
 @implicitNotFound("No coefficient of conversion exists for unit types (${U1}) and (${U2})")
 abstract class Coefficient[U1, U2]:

@@ -42,7 +42,8 @@ object meta:
             case AppliedType(op, List(b, e)) if (op =:= TypeRepr.of[^]) =>
                 val (bs, es) = (paren(b, render), powstr(e))
                 '{ ${bs} + "^" + ${es} }
-            case unitless() => '{ "1" }
+            case unitconst(v) =>
+                if (v.d == 1) Expr(v.n.toString) else '{ "(" + ${Expr(v.n.toString)} + "/" + ${Expr(v.d.toString)} + ")" }
             case namedunit(nu) => render(nu)
             case _ if (!strictunitexprs) => typestr(u)
             case _ =>
@@ -95,7 +96,7 @@ object meta:
     def atomic(using Quotes)(u: quotes.reflect.TypeRepr): Boolean =
         import quotes.reflect.*
         u match
-            case unitless() => true
+            case unitconst(_) => true
             case namedunit(_) => true
             case AppliedType(op, List(namedunit(_), _)) if (op =:= TypeRepr.of[^]) => true
             case AppliedType(op, List(flatmul(namedPU(_) +: namedunit(_) +: Nil), _)) if (op =:= TypeRepr.of[^]) => true

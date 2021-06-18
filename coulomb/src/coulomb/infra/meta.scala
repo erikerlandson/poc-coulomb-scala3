@@ -68,6 +68,7 @@ object meta:
                     val usig = unifyPow(p, bsig)
                     (ucoef, usig)
             case unitless() => ('{ Rational.const1 }, signil())
+            case unitconst(c) => ('{ Rational(${Expr(c.n)}, ${Expr(c.d)}) }, signil())
             case baseunit() => ('{ Rational.const1 }, sigcons(u, Rational.const1, signil()))
             case derivedunit1(ucoef, usig) => (ucoef, usig)
             case derivedunit(ucoef, usig) => (ucoef, usig)
@@ -96,6 +97,7 @@ object meta:
                 else if (e == 1) stdsig(b)
                 else unifyPow(p, stdsig(b))
             case unitless() => signil()
+            case unitconst(c) => sigcons(ratexp(c), Rational.const1, signil())
             case baseunit() => sigcons(u, Rational.const1, signil())
             case derivedunit1(_, _) => sigcons(u, Rational.const1, signil())
             case derivedunit(_, _) => sigcons(u, Rational.const1, signil())
@@ -169,6 +171,15 @@ object meta:
     object unitless:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Boolean =
             u =:= quotes.reflect.TypeRepr.of[1]
+
+    object unitconst:
+        def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Option[Rational] =
+            import quotes.reflect.*
+            u match
+                case ratlt(n, d) => Some(Rational(n, d))
+                case intlt(n) => Some(Rational(n, 1))
+                case dbllt(v) => Some(Rational(v))
+                case _ => None
 
     object baseunit:
         def unapply(using Quotes)(u: quotes.reflect.TypeRepr): Boolean =
@@ -305,6 +316,13 @@ object meta:
              import quotes.reflect.*
              tr match
                 case ConstantType(IntConstant(i)) => Some(i)
+                case _ => None
+
+    object dbllt:
+        def unapply(using Quotes)(tr: quotes.reflect.TypeRepr): Option[Double] =
+             import quotes.reflect.*
+             tr match
+                case ConstantType(DoubleConstant(v)) => Some(v)
                 case _ => None
 
     object typeDouble:

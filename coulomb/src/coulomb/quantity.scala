@@ -72,11 +72,11 @@ extension[VL, UL](ql: Quantity[VL, UL])
         add(ql.value, qr.value).withUnit[add.UO]
 
     transparent inline def to[V, U](using
-        conv: scala.Conversion[Quantity[VL, UL], Quantity[V, U]]): Quantity[V, U] = conv(ql)
+        conv: coulomb.conversion.Conversion[VL, UL, V, U]): Quantity[V, U] = conv(ql.value).withUnit[U]
     transparent inline def toValue[V](using
-        conv: scala.Conversion[Quantity[VL, UL], Quantity[V, UL]]): Quantity[V, UL] = conv(ql)
+        conv: coulomb.conversion.Conversion[VL, UL, V, UL]): Quantity[V, UL] = conv(ql.value).withUnit[UL]
     transparent inline def toUnit[U](using
-        conv: scala.Conversion[Quantity[VL, UL], Quantity[VL, U]]): Quantity[VL, U] = conv(ql)
+        conv: coulomb.conversion.Conversion[VL, UL, VL, U]): Quantity[VL, U] = conv(ql.value).withUnit[U]
 
 def showUnit[U](using sh: Show[U]): String = sh.value
 def showUnitFull[U](using sh: ShowFull[U]): String = sh.value
@@ -89,6 +89,11 @@ abstract class Coefficient[U1, U2]:
 object Coefficient:
     transparent inline given [U1, U2]: Coefficient[U1, U2] =
         ${ coulomb.infra.meta.coefficient[U1, U2] }
+
+object test:
+    def foo[U1, U2](q1: Quantity[Double, U1], q2: Quantity[Double, U2])(using s1: Show[U1], s2: Show[U2], add1: Add[Double, U1, Double, U2], s3: Show[add1.UO]): String =
+        val t: Quantity[add1.VO, add1.UO] = q1 + q2
+        s"${q1.show}  ${q2.show}, ${t.show}"
 
 object si:
     import coulomb.rational.Rational

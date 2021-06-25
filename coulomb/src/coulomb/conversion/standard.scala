@@ -19,10 +19,7 @@ object meta:
         import quotes.reflect.*
         (TypeRepr.of[VF], TypeRepr.of[VT]) match
             case (typeDouble(), typeDouble()) =>
-                '{ {
-                    object x extends Conversion[VF, U, VT, U] { def apply(v: Double): Double = v }
-                    x
-                 } }
+                '{ new Conversion[VF, U, VT, U] { def apply(v: Double): Double = v } }
             case _ =>
                 report.error(s"undefined Conversion pattern in convStandard1U")
                 '{ new Conversion[VF, U, VT, U] { def apply(v: VF): VT = ??? } }
@@ -35,12 +32,11 @@ object meta:
         require(!(uF =:= uT))
         val cf = coef(uF, uT)
         (TypeRepr.of[VF], TypeRepr.of[VT]) match
-            case (typeDouble(), typeDouble()) => '{ {
-                object x extends Conversion[VF, UF, VT, UT]:
+            case (typeDouble(), typeDouble()) => '{
+                new Conversion[VF, UF, VT, UT]:
                     val c = ${cf}.toDouble
                     def apply(v: Double): Double = v * c
-                x
-            } }
+            }
             case _ =>
                 report.error(s"undefined Conversion pattern in convStandard2U")
                 '{ new Conversion[VF, UF, VT, UT] { def apply(v: VF): VT = ??? } }

@@ -18,7 +18,7 @@ object meta:
     def coefficient[U1, U2](using Quotes, Type[U1], Type[U2]): Expr[Coefficient[U1, U2]] =
         import quotes.reflect.*
         val rcoef = coef(TypeRepr.of[U1], TypeRepr.of[U2])
-        '{ { object x extends Coefficient[U1, U2] { val value = $rcoef }; x } }
+        '{ new Coefficient[U1, U2] { val value = $rcoef } }
 
     def coef(using Quotes)(u1: quotes.reflect.TypeRepr, u2: quotes.reflect.TypeRepr): Expr[Rational] =
         import quotes.reflect.*
